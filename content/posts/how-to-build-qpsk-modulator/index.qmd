@@ -86,17 +86,83 @@ The next step is to convert the bits to QPSK symbols.  Typically, the even bits 
 ```{python}
 I_bits = message_bits[0::2]
 Q_bits = message_bits[1::2]
+
+I = 2 * I_bits - 1
+Q = 2 * Q_bits - 1
 ```
 
-After the bits are partitioned, we build the array of complex symbols.
+After the bits are partitioned, we can build the array of complex symbols.
 
 ```{python}
-symbols = I_bits + 1j * Q_bits
+iq_symbols = I + 1j * Q
 ```
 
 ### Pulse shaping 
 
+In pulse shaping, we use a digital filter to convert the complex symbols into a smooth, fairly narrowband complex waveform.  Usually, the 
+digital filter used for pulse shaping is referred to as a *matched filter*.          
 
+```{python}
+
+def root_raised_cosine(
+    rate_i=1,       # Input sample rate
+    rate_o=16,      # Ouput sample rate
+    beta=0.5,       # Excess bandwidth parameter
+    delay=5         # Number of symbol periods it takes for the peak to occur
+):
+
+    samples_per_symbol = rate_o // rate_i 
+
+    n = int(samples_per_symbol * delay)
+    x = []
+
+    # Add first element
+    x = x + [1 + beta * ((4/np.pi) - 1)]
+    for i in range(1,n+1):
+        if i == (samples_per_symbol/(4*beta)):
+            sin_ = np.sin(np.pi/(4*beta))
+            cos_ = np.cos(np.pi/(4*beta))
+            c1  = (beta / np.sqrt(2))
+            c2  = 1+(2/np.pi)
+            c3  = 1-(2/np.pi)
+            xi  = c1 * ((c2 * sin_) + (c3 * cos_))
+        else:
+            sin_ = np.sin(np.pi * i * (1-beta) / samples_per_symbol)
+            cos_ = np.cos(np.pi * i * (1+beta) /samples_per_symbol)
+            c1  = 4 * beta * i / samples_per_symbol 
+            c2  = np.pi * (i / samples_per_symbol) * (1 - c1**2)  
+            xi  = (sin_ + (c1 * cos_)) / c2
+
+        x = [xi] + x + [xi]
+
+
+    return np.array(x)
+
+```
+
+
+
+```{python}
+
+iq_symbols_1 = np.zeros(16 * len(iq_symbols), dtype=complex)
+iq_symbols_1[::16] = iq_symbols
+
+``` 
+
+```{python}
+
+matched_filter = root_raised_cosine(1, 16, 0.5, 5)
+```
+
+```{python}
+x0 = np.convolve(iq_symbols_1, matched_filter)
+```
+
+```{python}
+delay = (len(matched_filter)-1)//2
+plt.plot(np.real(x0))
+plt.plot(np.concatenate((np.zeros(delay),np.real(iq_symbols_1))))
+```
 ### Frequency translation 
 
 
