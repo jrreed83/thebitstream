@@ -1,0 +1,290 @@
+
+/*
+body {
+    font-family:
+}
+*/
+/* Flexbox container */
+.about-joey-container {
+  display: flex;
+  flex-wrap: wrap; /* Ensures children stack on smaller screens */
+  flex-direction: column;
+  gap: 20px; /* Adds space between children */
+  padding-top: 20px;
+  padding-bottom: 20px;
+  align-items: flex-start; /* Centers children vertically on larger screens */
+  max-width: 720px;
+  margin: 0 auto; /* Centers container horizontally */
+}
+
+/* Image container */
+.about-joey-image img {
+  width: 100%; /* Makes the image responsive */
+  max-width: 350px; /* Restricts image width to original size */
+  height: auto; /* Maintains aspect ratio */
+  border-radius: 10px; /* Adds rounded corners */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow */
+}
+
+/* Content container */
+.about-joey-content {
+  flex: 1; /* Allows this child to take up remaining space */
+  min-width: 250px; /* Ensures content doesn’t shrink too much on small screens */
+}
+
+.about-joey-content h1, .about-joey-content h2 {
+  margin-top: 0; /* Remove default margin if necessary */
+}
+
+.about-joey-content p {
+  font-size: 20px; /* Remove default margin if necessary */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .about-joey-container {
+    flex-direction: column; /* Stacks children vertically on smaller screens */
+    text-align: left; /* Centers text */
+  }
+
+  .about-joey-content {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-joey-container {
+    padding: 10px;
+  }
+
+  .about-joey-content p {
+    font-size: 14px; /* Adjusts font size for better readability on small screens */
+  }
+}
+
+
+
+/* Base styles for the button */
+.custom-button {
+  display: inline-block;
+  padding: 10px 20px; /* Adjust padding for button size */
+  font-size: 16px; /* Adjust font size */
+  color: #333; /* Dark text color */
+  text-decoration: none; /* Remove underline */
+  border: 2px solid #333; /* Dark border */
+  border-radius: 5px; /* Rounded corners */
+  background-color: transparent; /* No background */
+  transition: all 0.3s ease; /* Smooth hover effects */
+  margin-top: 1.2rem;
+}
+
+/* Hover effect */
+.custom-button:hover {
+  color: #fff; /* Change text color on hover */
+  background-color: #333; /* Add dark background on hover */
+  border-color: #333; /* Ensure border matches background */
+}
+
+/* Focus styles */
+.custom-button:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(51, 51, 51, 0.5); /* Subtle focus effect */
+}
+
+
+
+
+/* CONTACT FORM STYLES */
+.contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-wrap: wrap; /* Ensures children stack on smaller screens */
+  gap: 20px; /* Adds space between children */
+  padding-top: 20px;
+  padding-bottom: 20px ;
+  max-width: 1200px;
+  margin: 0 auto; /* Centers container horizontally */
+  margin-top: 64px;
+}
+
+.contact-info {
+  flex: 1; /* Allows this child to take up remaining space */
+  min-width: 200px; /* Ensures content doesn’t shrink too much on small screens */
+}
+
+.contact-info p {
+  font-size: 24px;
+  max-width: 720px;
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column; /* Stack contact items vertically */
+  gap: 10px; /* Space between each contact item */
+}
+
+/* Individual contact item */
+.contact-item {
+  margin-top: 10px;
+  display: flex;
+  align-items: center; /* Align icon and text vertically */
+  gap: 10px; /* Space between icon and text */
+  font-size: 16px; /* Adjust font size */
+}
+
+/* Icon styles */
+.contact-item .icon {
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  /*color: #007acc; *//* Icon color */ 
+}
+
+/* Links */
+.contact-item a {
+  text-decoration: none;
+}
+
+
+
+
+
+
+.contact-form-section {
+  width: 100%;
+  max-width: 720px;
+  /*margin-left: auto;*/
+  /*margin-right: auto;*/
+  padding: 3rem 1rem;
+  border: 1px solid black;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .contact {
+    flex-direction: column; /* Stacks children vertically on smaller screens */
+    text-align: left; /* Centers text */
+  }
+
+  .contact {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact {
+    padding: 10px;
+  }
+
+  .contact p {
+    font-size: 14px; /* Adjusts font size for better readability on small screens */
+  }
+}
+
+.contact-intro > * + * {
+  margin-top: 1rem;
+}
+
+.contact-title {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+
+.contact-description {
+  color: rgb(107 114 128);
+}
+
+.form-group-container {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+}
+
+.form-input,
+.form-textarea {
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  height: 2.5rem;
+  width: 100%;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.form-input::placeholder,
+.form-textarea:focus-visible {
+  color: #6b7280;
+}
+
+.form-input:focus-visible,
+.form-textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.form-textarea {
+  min-height: 120px;
+}
+
+.form-submit {
+  width: 100%;
+  margin-top: 1.2rem;
+  background-color: #3124ca;
+  color: #fff;
+  padding: 13px 5px;
+  border-radius: 0.375rem;
+}
+
+
+
+
+
+
+
+
+
+
+/* CONTACT FORM VALIDATION */
+.invalid-feedback,
+.empty-feedback {
+  display: none;
+}
+
+.was-validated :placeholder-shown:invalid ~ .empty-feedback {
+  display: block;
+}
+
+.was-validated :not(:placeholder-shown):invalid ~ .invalid-feedback {
+  display: block;
+}
+
+.is-invalid,
+.was-validated :invalid {
+  border-color: #dc3545;
+}
+
+
+/* For contact form, tailwind css, raw obtained from chat gpt... */
+.text-red-400 {
+  --tw-text-opacity: 1;
+  color: rgba(248, 113, 113, var(--tw-text-opacity));
+}
+
+.text-sm {
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+}
+
+.mt-1 {
+  margin-top: 0.25rem; /* 4px */
+}

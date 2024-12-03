@@ -1,0 +1,41 @@
+{{- define "main" }}
+
+<article class="post-single">
+
+  <div class="about-joey-container">
+    <div class="about-joey-image">
+      <img src="{{ .Params.Image}}">
+    </div>
+    <h1> {{ .Title }} </h1>
+    <div class="about-joey-content post-content">
+      {{ .Content }}
+  
+      <a href="#contact-me" class="custom-button">Contact Me</a>
+    </div>
+  </div>
+
+
+  {{- partial "contact-information.html" .}}
+
+
+  <footer class="post-footer">
+    {{- $tags := .Language.Params.Taxonomies.tag | default "tags" }}
+    <ul class="post-tags">
+      {{- range ($.GetTerms $tags) }}
+      <li><a href="{{ .Permalink }}">{{ .LinkTitle }}</a></li>
+      {{- end }}
+    </ul>
+    {{- if (.Param "ShowPostNavLinks") }}
+    {{- partial "post_nav_links.html" . }}
+    {{- end }}
+    {{- if (and site.Params.ShowShareButtons (ne .Params.disableShare true)) }}
+    {{- partial "share_icons.html" . -}}
+    {{- end }}
+  </footer>
+
+  {{- if (.Param "comments") }}
+  {{- partial "comments.html" . }}
+  {{- end }}
+</article>
+
+{{- end }}{{/* end main */}}

@@ -1,0 +1,158 @@
+
+<!-- 
+This is a working contact form. To receive email, 
+Replace YOUR_ACCESS_KEY_HERE with your actual Access Key.
+
+Create Access Key here 👉 https://web3forms.com/
+-->
+
+
+
+<div id="contact-me" class="contact">
+    <div class="contact-info">
+        <!--<h2 style="margin-bottom: 20px"> Contact Information </h2> -->
+        <p>
+            If you'd like to learn more about my expertise or work experience, feel free to contact me:
+        </p>
+        <div class="contact-details">
+            <div class="contact-item">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="20" height="20" class="icon">
+                <path d="M12 12.713l11.985-8.713v16H0v-16L12 12.713zm0-1.426L1.607 4.5h20.786L12 11.287zm0 1.714l9.964 7H2.036l9.964-7z" />
+              </svg>
+              <a href="mailto:joey@thebitstream.me">joey@thebitstream.me</a>
+            </div>
+            <div class="contact-item"> 
+                {{- partial "social_icons.html"}}
+            </div>
+          </div>
+          
+          
+    </div>
+    <section class="contact-form-section">
+        <div class="contact-intro">
+            <h2 class="contact-title">Get in Touch</h2>
+            <p class="contact-description">
+
+            </p>
+        </div>
+
+        <form class="contact-form needs-validation" action="https://api.web3forms.com/submit" method="POST" novalidate>
+            <input type="hidden" name="access_key" value="bd27cd0d-0335-4bf1-ba96-6059be655a4a" />
+            <input type="hidden" name="subject" value="New Contact Form Submission from Web3Forms" />
+            <input type="hidden" name="from_name" value="My Website" />
+            <!-- More custom ization options available in the docs: https://docs.web3forms.com -->
+
+            <div class="form-group-container">
+            <div class="form-group">
+                <label for="name" class="form-label">Name</label>
+                <input id="name" name="name" required class="form-input" type="text" />
+                <div class="empty-feedback invalid-feedback text-red-400 text-sm mt-1">
+                    Please provide your name.
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email" class="form-label">Email</label>
+                <input id="email" required name="email" class="form-input" type="email" />
+                <div class="empty-feedback text-red-400 text-sm mt-1">
+                    Please provide your email address.
+                </div>
+                <div class="invalid-feedback text-red-400 text-sm mt-1">
+                    Please provide a valid email address.
+                </div>
+            </div>
+
+        <!--     <div class="form-group">
+                <label for="phone" class="form-label">Phone</label>
+                <input id="phone" name="phone" class="form-input" placeholder="+1 (234) 56789" type="text" />
+            </div> -->
+            <div class="form-group">
+                <label for="message" class="form-label">Message</label>
+                <textarea required class="form-textarea" id="message" name="message"></textarea>
+                <div class="empty-feedback invalid-feedback text-red-400 text-sm mt-1">
+                    Please enter your message.
+                </div>
+            </div>
+            </div>
+            <div class="h-captcha" data-captcha="true"></div>
+            <button class="custom-button" type="submit">Send Message</button>
+            <p class="text-base text-center text-gray-400" id="result"></p>
+        </form>
+    </section>
+</section>
+<script src="https://web3forms.com/client/script.js" async defer></script>
+<script>
+
+ 
+
+     (function () { 
+        "use strict";
+        /*
+        * Form Validation
+        */
+
+        // Fetch all the forms we want to apply custom validation styles to
+        const forms = document.querySelectorAll(".needs-validation");
+        const result = document.getElementById("result");
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener(
+                "submit",
+                function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        form.querySelectorAll(":invalid")[0].focus();
+                    } else {
+                        /*
+                        * Form Submission using fetch()
+                        */
+                        event.preventDefault();
+                        event.stopPropagation();
+            
+                        const formData = new FormData(form);
+                        const object = Object.fromEntries(formData);
+                        const json = JSON.stringify(object);
+                        result.innerHTML = "Please wait...";
+
+                        fetch("https://api.web3forms.com/submit", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            },
+                            body: json,
+                        })
+                        .then(async (response) => {
+                            let json = await response.json();
+                            if (response.status == 200) {
+                                result.innerHTML = json.message;
+                                result.classList.remove("text-gray-500");
+                                result.classList.add("text-green-500");
+                            } else {
+                                console.log(response);
+                                result.innerHTML = json.message;
+                                result.classList.remove("text-gray-500");
+                                result.classList.add("text-red-500");
+                            }
+                        })
+                        .catch((error) => {
+                        console.log(error);
+                        result.innerHTML = "Something went wrong!";
+                    })
+                    .then(function () {
+                        form.reset();
+                        form.classList.remove("was-validated");
+                        setTimeout(() => {
+                            result.style.display = "none";
+                    }, 5000);
+                });
+            }
+            form.classList.add("was-validated");
+        },
+        false
+        );
+    });
+    })();
+    
+</script>

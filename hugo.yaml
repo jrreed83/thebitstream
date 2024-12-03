@@ -1,0 +1,186 @@
+baseURL: https://thebitstream.me
+languageCode: en-us
+title: thebitstream
+theme: PaperMod
+
+enableRobotsTXT: true
+buildDrafts: false
+buildFuture: false
+buildExpired: false
+
+minify:
+  disableXML: true
+  minifyOutput: true
+
+# This section determines what gets posted on home page
+mainSections: [posts]
+
+params:
+  math: true
+  env: production # to enable google analytics, opengraph, twitter-cards and schema.
+  title: thebitstream
+  description: "ExampleSite description"
+  keywords: [Blog, Portfolio, PaperMod]
+  author: Me
+  # author: ["Me", "You"] # multiple authors
+  images: ["<link or path of image for opengraph, twitter-cards>"]
+  DateFormat: "January 2, 2006"
+  defaultTheme: light # dark, light, auto
+
+  disableThemeToggle: true #false
+
+  ShowReadingTime: true
+  ShowShareButtons: false
+  ShowPostNavLinks: true
+  ShowBreadCrumbs: true
+  ShowCodeCopyButtons: false
+  ShowWordCount: false
+  ShowRssButtonInSectionTermList: true
+  UseHugoToc: true
+  disableSpecial1stPost: false
+  disableScrollToTop: false
+  comments: true
+  hidemeta: false
+  hideSummary: false
+  showtoc: false
+  tocopen: false
+
+  assets:
+    # disableHLJS: true # to disable highlight.js
+    # disableFingerprinting: true
+    favicon: "<link / abs url>"
+    favicon16x16: "<link / abs url>"
+    favicon32x32: "<link / abs url>"
+    apple_touch_icon: "<link / abs url>"
+    safari_pinned_tab: "<link / abs url>"
+
+  label:
+    #text: ""
+    icon: "/images/thebitstream_logo.png"
+    iconHeight: 75
+
+  # profile-mode
+  profileMode:
+    enabled: false # needs to be explicitly set
+    title: ExampleSite
+    subtitle: "This is subtitle"
+    imageUrl: "<img location>"
+    imageWidth: 120
+    imageHeight: 120
+    imageTitle: my image
+    buttons:
+      - name: Posts
+        url: posts
+      - name: Tags
+        url: tags
+
+
+  # Quarto stuff: https://quarto.org/docs/output-formats/hugo.html
+  ignoreFiles: [ "\\.qmd$", "\\.ipynb$", "\\.py$" ]
+
+  markup:
+    goldmark:
+      renderer:
+        unsafe: true
+
+
+  markup:
+    goldmark:
+      extensions:
+        passthrough:
+          delimiters:
+            block:
+            - - \[
+              - \]
+            - - $$
+              - $$
+            inline:
+            - - \(
+              - \)
+            - - $
+              - $
+          enable: true
+
+
+  # home-info mode
+  homeInfoParams:
+    Title: "Welcome." #"\U0001F44B Hi there, I'm Joey"
+    Content: >
+      I'm Joey, a PhD mathematician, turned electrical design engineer specializing in sensor processing and digital communication systems. 
+
+      This site will focus on explaining 
+      
+      - what it takes to design these types of systems
+      
+      - why they're useful
+       
+      - how the skills required to build them could be applied elsewhere
+      
+      - and anything else I decide to discuss 
+
+  shareButtons: 
+    - linkedin
+
+
+
+  socialIcons:
+    - name: x
+      url: "https://x.com/"
+#    - name: stackoverflow
+#      url: "https://stackoverflow.com"
+    - name: github
+      url: "https://github.com/jrreed83"
+    - name: linkedin
+      url:  "https://www.linkedin.com/in/joseph-reed-ph-d-1161bb20/"
+
+  analytics:
+    google:
+      SiteVerificationTag: "XYZabc"
+    bing:
+      SiteVerificationTag: "XYZabc"
+    yandex:
+      SiteVerificationTag: "XYZabc"
+
+  cover:
+    hidden: true # hide everywhere but not in structured data
+    hiddenInList: true # hide on list pages and home
+    hiddenInSingle: true # hide on single page
+
+  editPost:
+    URL: "https://github.com/<path_to_repo>/content"
+    Text: "Suggest Changes" # edit text
+    appendFilePath: true # to append file path to Edit link
+    disabled: true # added this based on the 'edit_post.html' partial in the template
+
+  # for search
+  # https://fusejs.io/api/options.html
+  fuseOpts:
+    isCaseSensitive: false
+    shouldSort: true
+    location: 0
+    distance: 1000
+    threshold: 0.4
+    minMatchCharLength: 0
+    limit: 10 # refer: https://www.fusejs.io/api/methods.html#search
+    keys: ["title", "permalink", "summary", "content"]
+menu:
+  main:
+    - identifier: blog
+      name: blog
+      url: /posts/
+      weight: 10
+    - identifier: about
+      name: about
+      url: /about/
+      weight: 20
+
+# Read: https://github.com/adityatelange/hugo-PaperMod/wiki/FAQs#using-hugos-syntax-highlighter-chroma
+pygmentsUseClasses: true
+markup:
+  highlight:
+    noClasses: false
+    # anchorLineNos: true
+    # codeFences: true
+    # guessSyntax: true
+    # lineNos: true
+    # style: monokai
