@@ -69,33 +69,35 @@ import matplotlib.pyplot as plt
 Next, we need to settle on a sequence of bits that will ultimately modulate the carrier.  There are many ways to do this, but I'm a big fan of using "hex-speak" for bit sequences.  Hex-speak numbers are unsigned integers that also spell out words when expressed in hexadecimal.  Most of them are pretty funny, and just lighten the mood.  It's a good thing.  Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`.  We'll use a 32-bit hex-speak word:
 
 ```{python}
-message_hex = 0xBADDB0BA
+payload_hex = 0xBADDB0BA
 ```
 
 Now we need to convert this number to an array of bits.  Here's a way to do this using bitwise operations:
 
 ```{python}
-message_bits = np.array([(1 & message_hex >> i) for i in range(32)])
+num_bits = 32
+payload_bits = np.zeros(num_bits, dtype=np.uint8)
+for i in range(num_bits):
+    payload_bits[i] = 1 & (payload_hex >> i)
+print(payload_bits)
 ```
 
 If you're not used to looking at bitwise operations before, this might look a little cryptic.  All we're really doing is taking the $i^\text{th}$ bit and 
 plopping it in the $i^\text{th}$ position of the array.  
 
-The next step is to convert the bits to QPSK symbols.  Typically, the even bits make up the in-phase signal and the odd-bits make up the quadrature signal:
+The next step is to convert the bits to complex QPSK symbols.  We start by splitting up the bits into inphase and quadrature components.  As long as you keep the same convention in the receiver code, you can do this however you want. I like to make the even bits the in-phase part and the odd-bits the quadrature part.  After this we convert the 
 
 ```{python}
-I_bits = message_bits[0::2]
-Q_bits = message_bits[1::2]
+i_bits = message_bits[0::2]
+q_bits = message_bits[1::2]
 
-I = 2 * I_bits - 1
-Q = 2 * Q_bits - 1
+i_symbols = 2 * i_bits - 1
+q_symbols = 2 * q_bits - 1
+
+iq_symbols = i_symbols + 1j * q_symbols
 ```
 
-After the bits are partitioned, we can build the array of complex symbols.
 
-```{python}
-iq_symbols = I + 1j * Q
-```
 
 ### Pulse shaping 
 
