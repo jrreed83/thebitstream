@@ -55,7 +55,7 @@ $$
 
 ### What's the Point?
 
-## A Simulation
+## Basic Simulation
 
 Now it's time to start implementing a basic modulator in Python. The three most common packages I use for communications simulations
 are `numpy`, `matplotlib`, and `scipy`. For this first one, we'll manage without `scipy`.
@@ -64,6 +64,8 @@ are `numpy`, `matplotlib`, and `scipy`. For this first one, we'll manage without
 import numpy as np 
 import matplotlib.pyplot as plt   
 ```
+
+### From bits to complex symbols
 
 Next, we need to settle on a sequence of bits that will ultimately modulate the carrier. There are many ways to do this, but I'm a big fan of using "hex-speak" for bit sequences. Hex-speak numbers are unsigned integers that also spell out words when expressed in hexadecimal. Most of them are pretty funny, and just lighten the mood. It's a good thing. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. We'll use a 32-bit hex-speak word:
 
@@ -80,15 +82,86 @@ message_bits = np.array([(1 & message_hex >> i) for i in range(32)])
 If you're not used to looking at bitwise operations before, this might look a little cryptic. All we're really doing is taking the $i^\text{th}$ bit and
 plopping it in the $i^\text{th}$ position of the array.
 
-The next step is to convert the bits to QPSK symbols. Typically, the even bits make up the in-phase signal and the odd-bits make up the quadrature signal.
+The next step is to convert the bits to QPSK symbols. Typically, the even bits make up the in-phase signal and the odd-bits make up the quadrature signal:
 
 ``` python
 I_bits = message_bits[0::2]
 Q_bits = message_bits[1::2]
+
+I = 2 * I_bits - 1
+Q = 2 * Q_bits - 1
 ```
 
-After the bits are partitioned, we build the array of complex symbols.
+After the bits are partitioned, we can build the array of complex symbols.
 
 ``` python
-symbols = I_bits + 1j * Q_bits
+iq_symbols = I + 1j * Q
 ```
+
+### Pulse shaping
+
+In pulse shaping, we use a digital filter to convert the complex symbols into a smooth, fairly narrowband complex waveform. Usually, the
+digital filter used for pulse shaping is referred to as a *matched filter*.
+
+``` python
+def root_raised_cosine(
+    rate_i=1,       # Input sample rate
+    rate_o=16,      # Ouput sample rate
+    beta=0.5,       # Excess bandwidth parameter
+    delay=5         # Number of symbol periods it takes for the peak to occur
+):
+
+    samples_per_symbol = rate_o // rate_i 
+
+    n = int(samples_per_symbol * delay)
+    x = []
+
+    # Add first element
+    x = x + [1 + beta * ((4/np.pi) - 1)]
+    for i in range(1,n+1):
+        if i == (samples_per_symbol/(4*beta)):
+            sin_ = np.sin(np.pi/(4*beta))
+            cos_ = np.cos(np.pi/(4*beta))
+            c1  = (beta / np.sqrt(2))
+            c2  = 1+(2/np.pi)
+            c3  = 1-(2/np.pi)
+            xi  = c1 * ((c2 * sin_) + (c3 * cos_))
+        else:
+            sin_ = np.sin(np.pi * i * (1-beta) / samples_per_symbol)
+            cos_ = np.cos(np.pi * i * (1+beta) /samples_per_symbol)
+            c1  = 4 * beta * i / samples_per_symbol 
+            c2  = np.pi * (i / samples_per_symbol) * (1 - c1**2)  
+            xi  = (sin_ + (c1 * cos_)) / c2
+
+        x = [xi] + x + [xi]
+
+
+    return np.array(x)
+```
+
+``` python
+iq_symbols_1 = np.zeros(16 * len(iq_symbols), dtype=complex)
+iq_symbols_1[::16] = iq_symbols
+```
+
+``` python
+matched_filter = root_raised_cosine(1, 16, 0.5, 5)
+```
+
+``` python
+x0 = np.convolve(iq_symbols_1, matched_filter)
+```
+
+``` python
+delay = (len(matched_filter)-1)//2
+plt.plot(np.real(x0))
+plt.plot(np.concatenate((np.zeros(delay),np.real(iq_symbols_1))))
+```
+
+![img](index_files/figure-markdown_strict/cell-11-output-1.png)
+
+<img src="index_files/figure-markdown_strict/cell-11-output-1.png" width="656" height="411" />
+
+### Frequency translation
+
+## Conclusion
