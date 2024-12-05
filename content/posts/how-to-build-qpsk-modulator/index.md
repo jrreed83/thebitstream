@@ -57,8 +57,9 @@ $$
 
 ## Basic Simulation
 
-Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be stupid simple. No fancy programming-language magic or crazy abstractions allowed. I want to be able to easily convert the simulation to a production-grade implementation in a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard.
+Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. Eventually, I want to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why. With that out of the way, let's get started.
 
+My preferred programming languages for this is Python.
 The three most common packages I use for communications simulations are `numpy`, `matplotlib`, and `scipy`. For this first one, we'll manage without `scipy`.
 
 ``` python
@@ -66,9 +67,9 @@ import numpy as np
 import matplotlib.pyplot as plt   
 ```
 
-### From bits to complex symbols
+### From byte arrays to complex QPSK symbols
 
-First things first. We need to choose a sequence of bits that will modulate the carrier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+First things first, we need to choose a payload. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -100,7 +101,7 @@ i_bits = payload_bits[0::2]
 q_bits = payload_bits[1::2]
 ```
 
-With that out of the way, pairs of in-phase and quadrature bits are mapped to constellation points in the complex plane.
+With that out of the way, we map pairs of in-phase and quadrature bits to constellation points in the complex plane.
 
 ``` python
 i_symbols = 2 * i_bits - 1
@@ -111,8 +112,7 @@ iq_symbols = i_symbols + 1j * q_symbols
 
 ### Pulse shaping
 
-In pulse shaping, we use a digital filter to convert the complex symbols into a smooth, fairly narrowband complex waveform. Usually, the
-digital filter used for pulse shaping is referred to as a *matched filter*.
+Pulse shaping uses a digital filter to convert the complex symbols into a smooth complex waveform that occupies a user-specified bandwidth. We'll discuss filter variations and their tradeoffs in a later post. For now, let's just use the most common one: the **root-raised cosine filter**. Here's an implementation I've used in several projects. It's not pretty.
 
 ``` python
 def root_raised_cosine(
