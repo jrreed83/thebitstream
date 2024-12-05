@@ -14,9 +14,9 @@ math: true
 ---
 
 
-"QPSK" stands for *Quadrature Phase Shift Keying*. It's a digital modulation technique, that encodes information into a high frequency carrier signal introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at specific times. Each phase shift is called a *symbol* and for QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
+*Quadrature Phase Shift Keying*, or QPSK for short, is a digital modulation technique that encodes information in a high frequency carrier signal by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified *symbol rate*. Each phase shift is called a *symbol*. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
 
-Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. They're built out of discrete circuit elements and as a result, tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
+Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. Analog modulators are built out of discrete components and tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
 
 ## Derivation
 
@@ -57,8 +57,9 @@ $$
 
 ## Basic Simulation
 
-Now it's time to start implementing a basic modulator in Python. The three most common packages I use for communications simulations
-are `numpy`, `matplotlib`, and `scipy`. For this first one, we'll manage without `scipy`.
+Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be stupid simple. No fancy programming-language magic or crazy abstractions allowed. I want to be able to easily convert the simulation to a production-grade implementation in a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard.
+
+The three most common packages I use for communications simulations are `numpy`, `matplotlib`, and `scipy`. For this first one, we'll manage without `scipy`.
 
 ``` python
 import numpy as np 
@@ -67,35 +68,45 @@ import matplotlib.pyplot as plt
 
 ### From bits to complex symbols
 
-Next, we need to settle on a sequence of bits that will ultimately modulate the carrier. There are many ways to do this, but I'm a big fan of using "hex-speak" for bit sequences. Hex-speak numbers are unsigned integers that also spell out words when expressed in hexadecimal. Most of them are pretty funny, and just lighten the mood. It's a good thing. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. We'll use a 32-bit hex-speak word:
+First things first. We need to choose a sequence of bits that will modulate the carrier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
-message_hex = 0xBADDB0BA
+payload = [
+    0xDE, 0xAD, 0xBE, 0xEF, # DEADBEEF
+    0xFE, 0xED, 0xBA, 0xBE, # FEEDBABE
+    0xDE, 0xCA, 0xFB, 0xAD, # DECAFBAD
+    0xBA, 0xAD, 0xF0, 0x0D  # BAADF00D
+]
 ```
 
-Now we need to convert this number to an array of bits. Here's a way to do this using bitwise operations:
+Now we convert the byte-array into a bit-array by looping over the bytes in `payload` and using bit-wise operations to extract the individual bits from each byte.
 
 ``` python
-message_bits = np.array([(1 & message_hex >> i) for i in range(32)])
+num_chars = len(payload)
+num_bits = num_chars * 8
+payload_bits = np.zeros(num_bits)
+k = 0
+for i in range(num_chars):
+    byte = payload[i]
+    for j in range(8):
+        payload_bits[k] = 1 & (byte >> j)
+        k += 1
 ```
 
-If you're not used to looking at bitwise operations before, this might look a little cryptic. All we're really doing is taking the $i^\text{th}$ bit and
-plopping it in the $i^\text{th}$ position of the array.
-
-The next step is to convert the bits to QPSK symbols. Typically, the even bits make up the in-phase signal and the odd-bits make up the quadrature signal:
+Next, we convert the payload into an array of complex QPSK symbols. We start by splitting up the big bit array into an even index bit (the in-phase array) array and an odd index bit array (the quadrature array).
 
 ``` python
-I_bits = message_bits[0::2]
-Q_bits = message_bits[1::2]
-
-I = 2 * I_bits - 1
-Q = 2 * Q_bits - 1
+i_bits = payload_bits[0::2]
+q_bits = payload_bits[1::2]
 ```
 
-After the bits are partitioned, we can build the array of complex symbols.
+With that out of the way, pairs of in-phase and quadrature bits are mapped to constellation points in the complex plane.
 
 ``` python
-iq_symbols = I + 1j * Q
+i_symbols = 2 * i_bits - 1
+q_symbols = 2 * q_bits - 1
+
+iq_symbols = i_symbols + 1j * q_symbols
 ```
 
 ### Pulse shaping
@@ -156,11 +167,10 @@ x0 = np.convolve(iq_symbols_1, matched_filter)
 delay = (len(matched_filter)-1)//2
 plt.plot(np.real(x0))
 plt.plot(np.concatenate((np.zeros(delay),np.real(iq_symbols_1))))
+plt.xlim([0, 500])
 ```
 
-![img](index_files/figure-markdown_strict/cell-11-output-1.png)
-
-<img src="index_files/figure-markdown_strict/cell-11-output-1.png" width="656" height="411" />
+<img src="index_files/figure-markdown_strict/cell-11-output-1.png" width="669" height="411" />
 
 ### Frequency translation
 
