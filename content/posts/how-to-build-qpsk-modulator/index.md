@@ -55,12 +55,19 @@ $$
 
 ### What's the Point?
 
-## Basic Simulation
+## Programming Style
 
-Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. Eventually, I want to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why. With that out of the way, let's get started.
+Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. Eventually, I want to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why.
 
-My preferred programming languages for this is Python.
-The three most common packages I use for communications simulations are `numpy`, `matplotlib`, and `scipy`. For this first one, we'll manage without `scipy`.
+## My Preferred Toolchain
+
+Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away. Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through libraries. As you'll see, this can lead to some clunky syntax, but you get used to it.
+
+## Modulator Simulation
+
+@TODO: Add diagram with large workflow, channel encoding, preamble, etc.
+
+The two packages you absolutely, without a doubt, need to write simulations are `numpy`, and `matplotlib`. Remember how I said efficient arrays aren't built into Python, but must be accessed through packages; `numpy` is that package.
 
 ``` python
 import numpy as np 
@@ -69,7 +76,7 @@ import matplotlib.pyplot as plt
 
 ### From byte arrays to complex QPSK symbols
 
-First things first, we need to choose a payload. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+First things first, let's select a payload. The payload is the data we want to send to the receiver. For simulations, I generate canned, static payloads that make debugging easy. You can setup whatever payload you want, but I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are groupt of unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -94,14 +101,14 @@ for i in range(num_chars):
         k += 1
 ```
 
-Next, we convert the payload into an array of complex QPSK symbols. We start by splitting up the big bit array into an even index bit (the in-phase array) array and an odd index bit array (the quadrature array).
+Finally, we convert the payload into an array of complex QPSK symbols. We start by splitting up the big bit array into an even index bit (the in-phase array) array and an odd index bit array (the quadrature array).
 
 ``` python
 i_bits = payload_bits[0::2]
 q_bits = payload_bits[1::2]
 ```
 
-With that out of the way, we map pairs of in-phase and quadrature bits to constellation points in the complex plane.
+Then map pairs of in-phase and quadrature bits to constellation points in the complex plane.
 
 ``` python
 i_symbols = 2 * i_bits - 1
@@ -150,6 +157,10 @@ def root_raised_cosine(
     return np.array(x)
 ```
 
+The first line in the function body
+
+### Validate the Basband Modulator
+
 ``` python
 iq_symbols_1 = np.zeros(16 * len(iq_symbols), dtype=complex)
 iq_symbols_1[::16] = iq_symbols
@@ -170,7 +181,7 @@ plt.plot(np.concatenate((np.zeros(delay),np.real(iq_symbols_1))))
 plt.xlim([0, 500])
 ```
 
-<img src="index_files/figure-markdown_strict/cell-11-output-1.png" width="669" height="411" />
+<img src="index_files/figure-markdown_strict/fig-baseband-output-1.png" width="669" height="411" />
 
 ### Frequency translation
 
