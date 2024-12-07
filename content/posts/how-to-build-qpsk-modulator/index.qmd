@@ -312,44 +312,33 @@ plt.legend()
 ```
 
 Besides being slightly different lengths, the easy and hard ways give exactly the same results.
+Moving forward, I'm going to focus exclusively on the baseband signal we calculated from the hard, filter bank approach.
 
-### How we Validate the Implementation
+### How do we Validate the Implementation?
 
-Moving forward, I'm going to focus exclusively on the baseband signal we calculated from the hard, filter bank approach.  A great question to ask at this point is
+A great question to ask at this point is
 
-> "yeah, but how do you know there isn't a bug?"
+> "yeah, but how do you know this is correct?"
 
-Great question😊! 
+Great question😊!  
 
+My short, but terrible answer to this question is 
 
+> "I can tell by how the waveform looks".
 
-
-
-A constellation is just a scatter plot of the complex symbols.  The in-phase part of each symbol goes on the horizontal axis and the quadrature-part goes on the vertical axis.    
-
-```{python}
-#plt.figure(1)
-#plt.plot(+1, +1, "rx", markersize=12)
-#plt.plot(-1, +1, "rx", markersize=12)
-#plt.plot(-1, -1, "rx", markersize=12)
-#plt.plot(+1, -1, "rx", markersize=12)
-#plt.plot(np.real(x2), np.imag(x2), "g.", alpha=0.7)
-
-
-#plt.xlim([-1.5, +1.5])
-#plt.ylim([-1.5, +1.5])
-#plt.grid()
-
-```
-
-The constellation diagram for the ideal symbols, is extremely boring.  It's extremely useful for receiver development though.  When noise starts getting added to the signals, the small green circles get larger and more diffuse. 
-
+We'll give an actual answer in the next post in this series.
 
 
 ## Conclusion
 
-This was a longer post than I thought it would be.  
+If you read until the end, thank you.  This was much longer than I originally intended, but there was a lot to cover:
 
+1. We went through some math that described how QPSK modulation works
+2. Described how to go from a digital payload represented as an array of bytes to an array of QPSK symbols.
+3. Discussed pulse shaping filters.
+4. Touched on the benefits of multirate signal processing.
+
+Next time, we'll justify why the baseband waveform we synthesized properly encodes the payload.
 
 
 
