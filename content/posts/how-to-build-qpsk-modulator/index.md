@@ -1,9 +1,9 @@
 ---
-title: How to Build a Basic QPSK modulator
+title: How to Build a Basic QPSK Modulator
 author: Joey Reed
 date: '2024-11-27'
 draft: false
-summary: A quick and dirty introduction to QPSK modulation.
+summary: A quick and dirty introduction to QPSK modulation using Python.
 tags:
   - communications
   - digital modulation
@@ -46,8 +46,7 @@ $$
   y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
 $$
 
-where $I(t)$ and $Q(t)$ are the so-called in-phase and quadrature signals. These signals pop up frequently in digital communications, and in
-our particular case
+where $I(t)$ and $Q(t)$ are the so-called in-phase and quadrature signals. These signals pop up frequently in digital communications, and in our particular case
 
 $$
     I(t) = \cos (\phi (t)) \text{ and } Q(t) = \sin(\phi(t)).
@@ -63,13 +62,13 @@ Before we get started on the modulator, I want to comment on my programming styl
 
 ## My Preferred Toolchain
 
-Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away. Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through third-party, open source, packages. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweight syntactical noise.
+Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away. Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through third-party, open source, packages. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh annoying syntax.
 
 ## Modulator Simulation
 
 @TODO: Add diagram with large workflow, channel encoding, preamble, etc.
 
-The two packages you absolutely need to write effective simulations in Python are `numpy` (for efficient arrays and math), and `matplotlib` (for plotting). Eventually, you'll also want to import `scipy`, but this is enough for now. To kick things off, let's import them.
+The two packages you absolutely need to write effective simulations in Python are `numpy` (for efficient arrays and math), and `matplotlib` (for plotting). Eventually, we'll also want to use import `scipy`. To kick things off, let's import them.
 
 ``` python
 import numpy as np 
@@ -89,7 +88,9 @@ payload = [
 ]
 ```
 
-Now that we have the payload, we can start progressively moving toward getting symbols. First, we need to convert the array of bytes to an array of bits. Essentially, this comes down to converting each byte to 8 bits, and concatenating them all together. There are several ways to implement this in Python. Here's the version that most closely follows what you might do in a language like C.
+#### Bytes to Bits
+
+Now that we have the payload, we can start progressively moving toward getting symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to implement this in Python. Here's the version that most closely follows what you might do in a language like C.
 
 ``` python
 num_chars = len(payload)
@@ -103,15 +104,16 @@ for i in range(num_chars):
         k += 1
 ```
 
-Converting bits to symbols is pretty simple. The first thing we need to do is split bit array in half. Half the bits will be used for the in-phase signal and the
-other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even or odd. The even bits become the in-phase bits and the odd bits become the quadrature bits:
+#### Bits to Symbols
+
+Converting bits to symbols is pretty simple. The first thing we need to do is split the bit array in half. Half the bits will be used for the in-phase signal and the other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even or odd. The even bits become the in-phase bits and the odd bits become the quadrature bits:
 
 ``` python
 i_bits = payload_bits[0::2]
 q_bits = payload_bits[1::2]
 ```
 
-Because the payload has an even number of bits, the lengths of `i_bits` and `q_bits` are the same. This means we can take a bit from each array, and map the bit pair to a point in the `XY`-plane.
+Because the payload has an even number of bits, the lengths of `i_bits` and `q_bits` are the same. This means we can take a bit from each array, and map the bit pair to a point in the `XY`-plane. Here's one way to do this that takes advantage of `numpy`'s vectorization capabilities.
 
 ``` python
 i_symbols = 2 * i_bits - 1
@@ -120,12 +122,24 @@ q_symbols = 2 * q_bits - 1
 iq_symbols = i_symbols + 1j * q_symbols
 ```
 
-### Pulse shaping
+### Pulse Shaping
 
 Now that we've converted the payload to an array of symbols, it's time to start
-building up a baseband waveform.
+building up our baseband waveform by selecting a suitable pulse-shaping filter.
+To build the right filter we need to ask ourselves a couple of questions:
 
-Pulse shaping uses a digital filter to convert the symbols into a smooth complex waveform with properties (like bandwidth) that you control. We'll discuss filter variations and their tradeoffs in a later post. For now, let's just use the most common one: the **root-raised cosine filter**. Here's an implementation I've used for several projects. It's not pretty, but it gets the job done.
+1.  How rapidly do we need to communicate?
+2.  How rapidly are we sending digital samples to the D/A converter?
+
+The answer to these two questions have a huge impact on the complexity of your modem. We need to walk before we can run, so let's keep it simple. We're going to assume that out D/A converter is expecting digital samples at a rate of 16 thousand samples per second (aka 16kHz) and we need to communicate at a rate of 1000 symbols per second. If you do the division, this means that the baseband waveform will have
+
+$$
+    \frac{16000\text{ samples/sec }}{1000 \text{ symbols/sec }} = 16\text{ samples/symbol }
+$$
+
+Pulse shaping uses a very specific type of digital filter to interpolate the symbols into a smoother complex waveform.
+
+We'll discuss filter variations and their tradeoffs in a later post. For now, let's just use the most common one: the **root-raised cosine filter**. Here's an implementation I've used for several projects. It's not pretty, but it gets the job done.
 
 ``` python
 def root_raised_cosine(
@@ -162,6 +176,8 @@ def root_raised_cosine(
 
     return np.array(x)
 ```
+
+Look at all that math. There are a lot of ways I could have screwed this function up.
 
 As the first line in the function body suggests, the ratio of the output and input sample rates gives you the number of
 
