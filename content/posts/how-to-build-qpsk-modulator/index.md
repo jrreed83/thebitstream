@@ -125,19 +125,9 @@ iq_symbols = i_symbols + 1j * q_symbols
 ### Pulse Shaping
 
 Now that we've converted the payload to an array of symbols, it's time to start
-building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a special type of digital filter that interpolates the symbols.
+building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a type of digital interpolation filter with properties you can tune in order to hit your bandwidth goals.
 
-1.  How rapidly do we need to communicate?
-2.  What carrier frequency should we use?
-3.  How rapidly are we sending digital samples to the D/A converter?
-
-The answer to these two questions have a huge impact on the complexity of your modem. We need to walk before we can run, so let's keep it simple. We're going to assume that out D/A converter is expecting digital samples at a rate of 16 thousand samples per second (aka 16kHz) and we need to communicate at a rate of 1000 symbols per second. If you do the division, this means that the baseband waveform will have
-
-$$
-    \frac{16000\text{ samples/sec }}{1000 \text{ symbols/sec }} = 16\text{ samples/symbol }
-$$
-
-We'll discuss filter variations and their tradeoffs in a later post. For now, let's just use the most common one: the **root-raised cosine filter**. Here's an implementation I've used for several projects. It's not pretty, but it gets the job done.
+The first pulse-shaping filter I ever learned about was the root-raised cosine filter. It's not perfect, but it will get the job done for now. In the future we might get into the nitty-gritty details about why it isn't necessarily the best option. Here's my hannd-rolled implementation of the root-raised cosine filter.
 
 ``` python
 def root_raised_cosine(
@@ -175,7 +165,15 @@ def root_raised_cosine(
     return np.array(x)
 ```
 
-Look at all that math. There are a lot of ways I could have screwed this function up.
+1.  How rapidly do we need to communicate?
+2.  What carrier frequency should we use?
+3.  How rapidly are we sending digital samples to the D/A converter?
+
+The answer to these two questions have a huge impact on the complexity of your modem. We need to walk before we can run, so let's keep it simple. We're going to assume that out D/A converter is expecting digital samples at a rate of 16 thousand samples per second (aka 16kHz) and we need to communicate at a rate of 1000 symbols per second. If you do the division, this means that the baseband waveform will have
+
+$$
+    \frac{16000\text{ samples/sec }}{1000 \text{ symbols/sec }} = 16\text{ samples/symbol }
+$$
 
 As the first line in the function body suggests, the ratio of the output and input sample rates gives you the number of
 
