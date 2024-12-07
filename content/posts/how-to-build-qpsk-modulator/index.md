@@ -62,13 +62,21 @@ Before we get started on the modulator, I want to comment on my programming styl
 
 ## My Preferred Toolchain
 
-Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away. Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through third-party, open source, packages. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh annoying syntax.
+Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
+
+Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through third-party, open source, packages. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the annoying syntax.
 
 ## Modulator Simulation
 
 @TODO: Add diagram with large workflow, channel encoding, preamble, etc.
 
-The two packages you absolutely need to write effective simulations in Python are `numpy` (for efficient arrays and math), and `matplotlib` (for plotting). Eventually, we'll also want to use import `scipy`. To kick things off, let's import them.
+The three packages I rely on to write effective simulations in Python are
+
+1.  `numpy` for efficient arrays and math,
+2.  `matplotlib` for plotting
+3.  `scipy` for filter design
+
+For this first post we can get away without using `scipy`. To kick things off, let's import the packages:
 
 ``` python
 import numpy as np 
@@ -90,7 +98,7 @@ payload = [
 
 #### Bytes to Bits
 
-Now that we have the payload, we can start progressively moving toward getting symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to implement this in Python. Here's the version that most closely follows what you might do in a language like C.
+Now that we have the payload, we can start progressively moving toward building the symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to implement this in Python. Here's the version that most closely follows what you might do in a language like C.
 
 ``` python
 num_chars = len(payload)
@@ -122,14 +130,11 @@ q_symbols = 2 * q_bits - 1
 iq_symbols = i_symbols + 1j * q_symbols
 ```
 
-### Pulse Shaping
+### Pulse Shaping Filter
 
-Now that we've converted the payload to an array of symbols, it's time to start
-building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a type of digital interpolation filter with properties you can tune in order to hit your bandwidth goals.
+Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a type of digital interpolation filter with properties you can tune in order to hit your bandwidth goals.
 
-The first pulse-shaping filter I ever learned about was the root-raised cosine filter.
-
-Here's a hand-rolled implementation (I really don't like looking at this function. There's probably a more elegant way to implement it, but it does work. ):
+The first pulse-shaping filter I ever learned about was the root-raised cosine filter. Here's a hand-rolled implementation (I really don't like looking at this function. There's probably a more elegant way to implement it, but it does work. ):
 
 ``` python
 def root_raised_cosine(
@@ -180,7 +185,7 @@ Here's how we create the shaping filter for this scenario:
 shaping_filter = root_raised_cosine(rate_o=16, rate_i=1, beta=0.5, delay=5)
 ```
 
-and here's what the filter looks like as a function of symbol period. This is also called the filter's **impulse response**. There are 10 symbol periods because `delay` is set to 5. If `delay` was set to 23, we'd occupy 46 symbol periods.
+and here's what the filter looks like as a function of symbol period. This is also called the filter's **impulse response**. There are 10 symbol periods because `delay` is set to 5. If `delay` was set to 23, it would span 46 symbol periods.
 
 ``` python
 plt.figure(1)
@@ -195,47 +200,107 @@ plt.grid()
 
 <img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
 
-In case you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:  
+In case you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:
+
 $$
 \text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } 
 $$
 
-``` python
-f = np.convolve(shaping_filter, shaping_filter)/np.sum(shaping_filter*shaping_filter)
-f = f[80:-80]
-plt.figure(1)
-inds = np.linspace(-5, +5, len(shaping_filter))
-plt.plot(inds, f)
-plt.xlim([-5, 5])
-plt.xticks(np.arange(-5, +6))
-plt.grid()
-```
-
-<img src="index_files/figure-markdown_strict/cell-10-output-1.png" width="649" height="411" />
+$$ 
+\frac{\text{samples}}{\text{second}} = \frac{\text{samples}}{\text{symbol}} \times \frac{\text{symbols}}{\text{second}}
+$$
 
 ``` python
-baseband_samples = np.convolve(shaping_filter, iq_symbols)
+samples_per_symbol = 16
+symbols_per_second = 1000
+samples_per_second = samples_per_symbol * symbols_per_second
 ```
 
-$$
-\text{output bandwidth in Hz} = (1 + \text{ beta} ) \times \frac{\text{rate_o}}{\text{rate_i}}
-$$
+### Interpolation Process
 
-It's not perfect, but it will get the job done for now. In the future we might get into the nitty-gritty details about why it aisn't that great and what some of the alternative options are. If you want to ge
+The next step in the process is to interpolate the symbols with the filter. There's an inefficient, easy way, to do this and an efficient, more complex way to do this. Let's start with the easy way.
 
-1.  How rapidly do we need to communicate?
-2.  What carrier frequency should we use?
-3.  How rapidly are we sending digital samples to the D/A converter?
+#### The easy way
 
-The answer to these two questions have a huge impact on the complexity of your modem. We need to walk before we can run, so let's keep it simple. We're going to assume that out D/A converter is expecting digital samples at a rate of 16 thousand samples per second (aka 16kHz) and we need to communicate at a rate of 1000 symbols per second. If you do the division, this means that the baseband waveform will have
+For the easy method, all we do is upsample the symbols by a factor of 16 and apply the filter.
 
-$$
-    \frac{16000\text{ samples/sec }}{1000 \text{ symbols/sec }} = 16\text{ samples/symbol }
-$$
+``` python
+num_symbols = len(iq_symbols)
+iq_symbols_upsampled = np.zeros(num_symbols * 16, dtype=complex)
+iq_symbols_upsampled[::16] = iq_symbols
 
-As the first line in the function body suggests, the ratio of the output and input sample rates gives you the number of
+baseband_waveform = np.convolve(iq_symbols_upsampled, shaping_filter)
+```
 
-### Validate the Baseband Modulator
+And here's the what the in-phase (blue) and quadrature (orange) waveforms look like:
+
+``` python
+num_baseband_samples = len(baseband_waveform)
+t_ms = 1000*np.arange(num_baseband_samples) / samples_per_second
+plt.plot(t_ms, np.real(baseband_waveform), label="I")
+plt.plot(t_ms, np.imag(baseband_waveform), label="Q")
+plt.xlabel("Time (ms)")
+plt.ylabel("Amplitude")
+plt.legend()
+```
+
+<img src="index_files/figure-markdown_strict/cell-12-output-1.png" width="675" height="429" />
+
+Can you spot why this is inefficient? Yep, it's related to the upsampling step. Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
+
+#### The hard way
+
+This brings us to the harder, but more efficient way of doing this using *multirate signal processing*. There's no way I can explain everything you need to know about multirate signal processing here. What I can do is try to give you the big picture, with some code that demonstrates the process.
+
+The selling point of multirate signal processing is that computational efficiency can be improved by restructuring and rearranging the original task. To improve the efficieny of the pulse shaping task, we need to transform the root-raised cosine filter into a two-dimensional filter bank
+
+``` python
+filter_bank = np.reshape(
+    np.concatenate((shaping_filter, np.zeros(15))),
+    (16, 11),
+    order="F"        
+)
+```
+
+and apply the filter with a from-scratch convolution process that uses a single shift register. Don't worry about the details for now. The key takeaway is that for every input symbol, we get 16 output samples. And we didn't have to upsample the symbol array.
+
+``` python
+iq_symbols_1 = np.concatenate((iq_symbols, np.zeros(16)))
+buffer = np.zeros(11, dtype=complex)
+baseband_samples_fb = np.zeros(len(iq_symbols_1) * 16, dtype=complex)
+k = 0
+for i in range(len(iq_symbols_1)):
+    buffer[10] = buffer[9]
+    buffer[ 9] = buffer[8]
+    buffer[ 8] = buffer[7]
+    buffer[ 7] = buffer[6]
+    buffer[ 6] = buffer[5]
+    buffer[ 5] = buffer[4]
+    buffer[ 4] = buffer[3]
+    buffer[ 3] = buffer[2]
+    buffer[ 2] = buffer[1]
+    buffer[ 1] = buffer[0]
+    buffer[ 0] = iq_symbols_1[i]
+
+    for index in range(16):
+        baseband_samples_fb[k+index] = np.sum(buffer * filter_bank[index,:])
+
+    k += 16
+```
+
+``` python
+num_baseband_samples_fb = len(baseband_samples_fb)
+t_ms = 1000*np.arange(num_baseband_samples_fb) / samples_per_second
+plt.plot(t_ms, np.real(baseband_samples_fb), label="I")
+plt.plot(t_ms, np.imag(baseband_samples_fb), label="Q")
+plt.xlabel("Time (ms)")
+plt.ylabel("Amplitude")
+plt.legend()
+```
+
+<img src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" />
+
+### Validate the Basband Waveform
 
 ``` python
 iq_symbols_1 = np.zeros(16 * len(iq_symbols), dtype=complex)
@@ -269,7 +334,7 @@ plt.plot(np.imag(x1))
 plt.grid()
 ```
 
-<img src="index_files/figure-markdown_strict/cell-16-output-1.png" width="669" height="411" />
+<img src="index_files/figure-markdown_strict/cell-20-output-1.png" width="669" height="411" />
 
 A constellation is just a scatter plot of the complex symbols. The in-phase part of each symbol goes on the horizontal axis and the quadrature-part goes on the vertical axis.
 
@@ -287,7 +352,7 @@ plt.ylim([-1.5, +1.5])
 plt.grid()
 ```
 
-<img src="index_files/figure-markdown_strict/cell-17-output-1.png" width="667" height="416" />
+<img src="index_files/figure-markdown_strict/cell-21-output-1.png" width="667" height="416" />
 
 The constellation diagram for the ideal symbols, is extremely boring. It's extremely useful for receiver development though. When noise starts getting added to the signals, the small green circles get larger and more diffuse.
 
