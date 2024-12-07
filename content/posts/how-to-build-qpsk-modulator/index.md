@@ -14,7 +14,7 @@ math: true
 ---
 
 
-*Quadrature Phase Shift Keying*, or QPSK for short, is a digital modulation technique that encodes information in a high frequency carrier signal by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified *symbol rate*. Each phase shift is called a *symbol*. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
+*Quadrature Phase Shift Keying*, or QPSK for short, is a digital modulation technique that encodes information onto carrier wave by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified *symbol rate*. Each phase shift is called a *symbol*. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
 
 Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. Analog modulators are built out of discrete components and tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
 
@@ -26,15 +26,15 @@ $$
   y(t) = \cos(2\pi f t + \phi (t)).
 $$
 
-Turns out that this isn't a very helpful expression for developing a QPSK modulator because the carrier and baseband signals are intertwined. If we can rip them apart, the baseband signal can be synthesized digitally and converted to an analog waveform at transmission time, using common and inexpensive circuit components.
+Turns out that this isn't a very helpful expression for developing a QPSK modulator because the carrier and baseband signals are intertwined. If we can rip them apart, the baseband signal can be synthesized digitally and converted to an analog waveform at transmission time, using commercial-off-the-shelf (COTS) mixers.
 
-Fortunately, the fix is simple. All we need is one of the angle sum formulas you probably learned in highschool:
+Fortunately, the fix is simple. We just need to apply one of the angle sum formulas you probably learned in highschool:
 
 $$
   \cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)
 $$
 
-If we apply this to $y(t)$, we get
+Appllying this to $y(t)$, we get
 
 $$
   y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
@@ -127,13 +127,15 @@ iq_symbols = i_symbols + 1j * q_symbols
 Now that we've converted the payload to an array of symbols, it's time to start
 building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a type of digital interpolation filter with properties you can tune in order to hit your bandwidth goals.
 
-The first pulse-shaping filter I ever learned about was the root-raised cosine filter. It's not perfect, but it will get the job done for now. In the future we might get into the nitty-gritty details about why it isn't necessarily the best option. Here's my hannd-rolled implementation of the root-raised cosine filter.
+The first pulse-shaping filter I ever learned about was the root-raised cosine filter.
+
+Here's a hand-rolled implementation (I really don't like looking at this function. There's probably a more elegant way to implement it, but it does work. ):
 
 ``` python
 def root_raised_cosine(
-    rate_i=1,       # Input sample rate
-    rate_o=16,      # Ouput sample rate
-    beta=0.5,       # Excess bandwidth parameter
+    rate_i=1,       # Input sample rate (always set to 1)
+    rate_o=16,      # Ouput sample rate (interpolation factor)
+    beta=0.5,       # Excess bandwidth parameter (between 0 and 1)
     delay=5         # Number of symbol periods it takes for the peak to occur
 ):
 
@@ -164,6 +166,58 @@ def root_raised_cosine(
 
     return np.array(x)
 ```
+
+The function arguments give you control over the bandwidth of the output baseband waveform. Rather than spend a lot of time explaining this, let's keep moving through the modulator design. I think this is the best way to see how everything fits together.
+
+Okay, let's say we want to communicate at a rate of 1000 symbols per second and interpolate by 16 times. Let's keep `rate_i` at 1 and change `rate_o` to 16.
+
+-   `delay` controls how many symbol periods you want the filter to last. I usually keep this at 5.
+-   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5. If you want the baseband signal to transition quickly, choose 0.5.
+
+``` python
+shaping_filter = root_raised_cosine(rate_o=16, rate_i=1, beta=0.5, delay=5)
+```
+
+``` python
+plt.figure(1)
+inds = np.linspace(-5, +5, len(shaping_filter))
+plt.plot(inds, shaping_filter)
+plt.xlim([-5, 5])
+plt.xticks(np.arange(-5, +6))
+plt.xlabel("Symbol Period")
+plt.ylabel("Amplitude")
+plt.grid()
+```
+
+<img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
+
+$$
+\text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } 
+$$
+
+``` python
+f = np.convolve(shaping_filter, shaping_filter)/np.sum(shaping_filter*shaping_filter)
+f = f[80:-80]
+plt.figure(1)
+inds = np.linspace(-5, +5, len(shaping_filter))
+plt.plot(inds, f)
+plt.xlim([-5, 5])
+plt.xticks(np.arange(-5, +6))
+plt.grid()
+```
+
+<img src="index_files/figure-markdown_strict/cell-10-output-1.png" width="649" height="411" />
+
+``` python
+baseband_samples = np.convolve(shaping_filter, iq_symbols)
+```
+
+\$\$
+
+= (1 + )
+\$\$
+
+It's not perfect, but it will get the job done for now. In the future we might get into the nitty-gritty details about why it aisn't that great and what some of the alternative options are. If you want to ge
 
 1.  How rapidly do we need to communicate?
 2.  What carrier frequency should we use?
@@ -211,7 +265,7 @@ plt.plot(np.imag(x1))
 plt.grid()
 ```
 
-<img src="index_files/figure-markdown_strict/cell-12-output-1.png" width="669" height="411" />
+<img src="index_files/figure-markdown_strict/cell-16-output-1.png" width="669" height="411" />
 
 A constellation is just a scatter plot of the complex symbols. The in-phase part of each symbol goes on the horizontal axis and the quadrature-part goes on the vertical axis.
 
@@ -229,7 +283,7 @@ plt.ylim([-1.5, +1.5])
 plt.grid()
 ```
 
-<img src="index_files/figure-markdown_strict/cell-13-output-1.png" width="667" height="416" />
+<img src="index_files/figure-markdown_strict/cell-17-output-1.png" width="667" height="416" />
 
 The constellation diagram for the ideal symbols, is extremely boring. It's extremely useful for receiver development though. When noise starts getting added to the signals, the small green circles get larger and more diffuse.
 \### Frequency translation
