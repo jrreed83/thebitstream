@@ -3,7 +3,7 @@ title: How to Build a Basic QPSK Modulator
 author: Joey Reed
 date: '2024-11-27'
 draft: false
-summary: A quick and dirty introduction to QPSK modulation using Python.
+summary: A quick and dirty introduction to baseband QPSK modulation using Python.
 tags:
   - communications
   - digital modulation
@@ -54,7 +54,7 @@ $$
 
 ### What's the Point?
 
-@TODO: talk about analog stuff, summarize
+This post will be all about how to calculate $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) would transform the digital samples to a continuous analog waveform.
 
 ## Programming Style
 
@@ -252,7 +252,9 @@ Can you spot why this is inefficient? Yep, it's related to the upsampling step. 
 
 This brings us to the harder, but more efficient way of doing this using *multirate signal processing*. There's no way I can explain everything you need to know about multirate signal processing here. What I can do is try to give you the big picture, with some code that demonstrates the process.
 
-The selling point of multirate signal processing is that computational efficiency can be improved by restructuring and rearranging the original task. To improve the efficieny of the pulse shaping task, we need to transform the root-raised cosine filter into a two-dimensional filter bank
+The selling point of multirate signal processing is you can drastically improve computational efficiency by restructuring and rearranging the original task. On a beefy processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, you'll start worrying about this.
+
+To improve the efficieny of the pulse shaping task, we need to transform the root-raised cosine filter into a two-dimensional *filter bank*.
 
 ``` python
 filter_bank = np.reshape(
@@ -262,7 +264,8 @@ filter_bank = np.reshape(
 )
 ```
 
-and apply the filter with a from-scratch convolution process that uses a single shift register. Don't worry about the details for now. The key takeaway is that for every input symbol, we get 16 output samples. And we didn't have to upsample the symbol array.
+Essentially, we're just taking our filter with 161 coefficient pulse shaping filter and rearranging into 16 smaller filters, with 11 coefficients each. Tacking on 15 zeros at the end of the original shaping filter is required to get the math to work. We then apply the filter bank to the original
+symbol array using a custom designed algorithm. No upsampling necessary.
 
 ``` python
 iq_symbols_1 = np.concatenate((iq_symbols, np.zeros(16)))
@@ -288,6 +291,17 @@ for i in range(len(iq_symbols_1)):
     k += 16
 ```
 
+The workload improvements are pretty incredible:
+
+-   Easy way: ~300 multiplies and additions for a single output sample.
+-   Hard way: ~20 multiples and additions for a single output sample.
+
+Not bad right? The only price you pay is a more complex implementation. When you
+get used to how multirate signal processing works though, it it's not too bad.
+
+And here's what the in-phase and quadrature signals look like when we use multirate
+processing.
+
 ``` python
 num_baseband_samples_fb = len(baseband_samples_fb)
 t_ms = 1000*np.arange(num_baseband_samples_fb) / samples_per_second
@@ -300,63 +314,33 @@ plt.legend()
 
 <img src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" />
 
-### Validate the Basband Waveform
+Besides being slightly different lengths, the easy and hard ways give exactly the same results.
 
-``` python
-iq_symbols_1 = np.zeros(16 * len(iq_symbols), dtype=complex)
-iq_symbols_1[::16] = iq_symbols
-```
+### How we Validate the Implementation
 
-``` python
-matched_filter = root_raised_cosine(1, 16, 0.5, 5)
-delay = (len(matched_filter)-1)//2
-```
+Moving forward, I'm going to focus exclusively on the baseband signal we calculated from the hard, filter bank approach. A great question to ask at this point is
 
-``` python
-x0 = np.convolve(iq_symbols_1, matched_filter)
-```
+> "yeah, but how do you know there isn't a bug?"
 
-``` python
-plt.plot(np.real(x0))
-plt.plot(np.concatenate((np.zeros(delay),np.real(iq_symbols_1))))
-plt.xlim([0, 500])
-```
-
-<img src="index_files/figure-markdown_strict/fig-baseband-output-1.png" width="669" height="411" />
-
-``` python
-x1 = np.convolve(x0, matched_filter/np.sum(matched_filter*matched_filter))
-
-start = 2*delay
-x2 = x0[start::16]
-plt.plot(np.real(x1))
-plt.plot(np.imag(x1))
-plt.grid()
-```
-
-<img src="index_files/figure-markdown_strict/cell-20-output-1.png" width="669" height="411" />
+Great question😊!
 
 A constellation is just a scatter plot of the complex symbols. The in-phase part of each symbol goes on the horizontal axis and the quadrature-part goes on the vertical axis.
 
 ``` python
-plt.figure(1)
-plt.plot(+1, +1, "rx", markersize=12)
-plt.plot(-1, +1, "rx", markersize=12)
-plt.plot(-1, -1, "rx", markersize=12)
-plt.plot(+1, -1, "rx", markersize=12)
-plt.plot(np.real(x2), np.imag(x2), "g.", alpha=0.7)
+#plt.figure(1)
+#plt.plot(+1, +1, "rx", markersize=12)
+#plt.plot(-1, +1, "rx", markersize=12)
+#plt.plot(-1, -1, "rx", markersize=12)
+#plt.plot(+1, -1, "rx", markersize=12)
+#plt.plot(np.real(x2), np.imag(x2), "g.", alpha=0.7)
 
 
-plt.xlim([-1.5, +1.5])
-plt.ylim([-1.5, +1.5])
-plt.grid()
+#plt.xlim([-1.5, +1.5])
+#plt.ylim([-1.5, +1.5])
+#plt.grid()
 ```
 
-<img src="index_files/figure-markdown_strict/cell-21-output-1.png" width="667" height="416" />
-
 The constellation diagram for the ideal symbols, is extremely boring. It's extremely useful for receiver development though. When noise starts getting added to the signals, the small green circles get larger and more diffuse.
-
-### Frequency translation
 
 ## Conclusion
 
