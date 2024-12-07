@@ -18,7 +18,7 @@ math: true
 
 Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. Analog modulators are built out of discrete components and tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
 
-## Derivation
+# Derivation
 
 The equation for phase modulating a carrier sitting at $f$ Hz with an information bearing baseband signal $\phi (t)$ is
 
@@ -52,19 +52,19 @@ $$
     I(t) = \cos (\phi (t)) \text{ and } Q(t) = \sin(\phi(t)).
 $$
 
-### What's the Point?
+## What's the Point?
 
 @TODO: talk about analog stuff, summarize
 
-## Programming Style
+# Programming Style
 
 Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. Eventually, I want to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why.
 
-## My Preferred Toolchain
+# My Preferred Toolchain
 
 Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away. Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through third-party, open source, packages. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh annoying syntax.
 
-## Modulator Simulation
+# Modulator Simulation
 
 @TODO: Add diagram with large workflow, channel encoding, preamble, etc.
 
@@ -75,7 +75,7 @@ import numpy as np
 import matplotlib.pyplot as plt   
 ```
 
-### From byte arrays to complex QPSK symbols
+## From byte arrays to complex QPSK symbols
 
 Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are groups of unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
@@ -88,7 +88,7 @@ payload = [
 ]
 ```
 
-#### Bytes to Bits
+### Bytes to Bits
 
 Now that we have the payload, we can start progressively moving toward getting symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to implement this in Python. Here's the version that most closely follows what you might do in a language like C.
 
@@ -104,7 +104,7 @@ for i in range(num_chars):
         k += 1
 ```
 
-#### Bits to Symbols
+### Bits to Symbols
 
 Converting bits to symbols is pretty simple. The first thing we need to do is split the bit array in half. Half the bits will be used for the in-phase signal and the other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even or odd. The even bits become the in-phase bits and the odd bits become the quadrature bits:
 
@@ -122,7 +122,7 @@ q_symbols = 2 * q_bits - 1
 iq_symbols = i_symbols + 1j * q_symbols
 ```
 
-### Pulse Shaping
+## Pulse Shaping
 
 Now that we've converted the payload to an array of symbols, it's time to start
 building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a type of digital interpolation filter with properties you can tune in order to hit your bandwidth goals.
@@ -172,11 +172,15 @@ The function arguments give you control over the bandwidth of the output baseban
 Okay, let's say we want to communicate at a rate of 1000 symbols per second and interpolate by 16 times. Let's keep `rate_i` at 1 and change `rate_o` to 16.
 
 -   `delay` controls how many symbol periods you want the filter to last. I usually keep this at 5.
--   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5. If you want the baseband signal to transition quickly, choose 0.5.
+-   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5 - the higher the value, the higher the bandwidth.
+
+Here's how we create the shaping filter for this scenario:
 
 ``` python
 shaping_filter = root_raised_cosine(rate_o=16, rate_i=1, beta=0.5, delay=5)
 ```
+
+and here's what the filter looks like as a function of symbol period. This is also called the filter's **impulse response**. There are 10 symbol periods because `delay` is set to 5. If `delay` was set to 23, we'd cover 46 symbol periods.
 
 ``` python
 plt.figure(1)
@@ -191,6 +195,7 @@ plt.grid()
 
 <img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
 
+If you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:  
 $$
 \text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } 
 $$
@@ -231,7 +236,7 @@ $$
 
 As the first line in the function body suggests, the ratio of the output and input sample rates gives you the number of
 
-### Validate the Basband Modulator
+## Validate the Baseband Modulator
 
 ``` python
 iq_symbols_1 = np.zeros(16 * len(iq_symbols), dtype=complex)
@@ -286,6 +291,6 @@ plt.grid()
 <img src="index_files/figure-markdown_strict/cell-17-output-1.png" width="667" height="416" />
 
 The constellation diagram for the ideal symbols, is extremely boring. It's extremely useful for receiver development though. When noise starts getting added to the signals, the small green circles get larger and more diffuse.
-\### Frequency translation
+\## Frequency translation
 
-## Conclusion
+# Conclusion

@@ -183,12 +183,7 @@ shaping_filter = root_raised_cosine(rate_o=16, rate_i=1, beta=0.5, delay=5)
 
 ```
 
-and here's what the filter looks like as a function of symbol period.  This is also called the filter's **impulse response**.  There are 10 symbol periods because `delay` is set to 5.  If `delay` was set to 23, we'd cover 46 symbol periods.  If you like formulas, here's the rule   
-
-
-$$
-\text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } 
-$$
+and here's what the filter looks like as a function of symbol period.  This is also called the filter's **impulse response**.  There are 10 symbol periods because `delay` is set to 5.  If `delay` was set to 23, we'd cover 46 symbol periods.  
  
 ```{python}
 plt.figure(1)
@@ -201,8 +196,10 @@ plt.ylabel("Amplitude")
 plt.grid()
 ```
 
-
-
+If you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:  
+$$
+\text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } 
+$$
 
 
 
@@ -253,7 +250,7 @@ $$
 As the first line in the function body suggests, the ratio of the output and input sample rates gives you the number of
 
 
-### Validate the Basband Modulator
+### Validate the Baseband Modulator
 
 ```{python}
 
@@ -312,11 +309,13 @@ plt.grid()
 ```
 
 The constellation diagram for the ideal symbols, is extremely boring.  It's extremely useful for receiver development though.  When noise starts getting added to the signals, the small green circles get larger and more diffuse. 
+
 ### Frequency translation 
 
 
 ## Conclusion
 
+This was a longer post than I thought it would be.  
 
 
 
