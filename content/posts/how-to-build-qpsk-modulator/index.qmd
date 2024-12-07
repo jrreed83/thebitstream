@@ -201,6 +201,19 @@ $$
 
 ### Interpolation Process
 
+So we have a pulse shaping root-raised cosine filter and an array of QPSK symbols.  The next thing we need to do
+is interpolate the symbols with the filter.  There's an inefficient, easy way, to do this and an efficient, more complex 
+way to do this.  Let's start with the easy way.
+
+```{python}
+num_symbols = len(iq_symbols)
+iq_symbols_upsampled = np.zeros(num_symbols * 16)
+iq_symbols_upsampled[::16] = iq_symbols
+```
+
+```{python}
+baseband_waveform = np.convolve(iq_symbols_upsampled, shaping_filter)
+```
 
 ### Validate the Basband Waveform
 
