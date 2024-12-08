@@ -14,7 +14,7 @@ math: true
 ---
 
 
-*Quadrature Phase Shift Keying*, or QPSK for short, is a digital modulation technique that encodes information onto carrier wave by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified *symbol rate*. Each phase shift is called a *symbol*. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
+*Quadrature Phase Shift Keying*, or QPSK for short, is a digital modulation technique that encodes information onto a carrier wave by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified *symbol rate*. Each phase shift is called a *symbol*. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
 
 Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. Analog modulators are built out of discrete components and tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
 
@@ -28,13 +28,13 @@ $$
 
 Turns out that this isn't a very helpful expression for developing a QPSK modulator because the carrier and baseband signals are intertwined. If we can rip them apart, the baseband signal can be synthesized digitally and converted to an analog waveform at transmission time, using commercial-off-the-shelf (COTS) mixers.
 
-Fortunately, the fix is simple. We just need to apply one of the angle sum formulas you probably learned in highschool:
+Fortunately, the fix is simple. We just need to apply one of the angle sum formulas you probably learned in high school:
 
 $$
 \cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)
 $$
 
-Appllying this to $y(t)$, we get
+Applying this to $y(t)$, we get
 
 $$
 y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
@@ -54,7 +54,7 @@ $$
 
 ## What's the Point?
 
-This post will be all about how to calculate $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) and analog reconstruction filter transform the digital samples to a continuous, band-limited, analog waveforms.
+This post is all about calculating $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) and analog reconstruction filter transform the digital samples to a continuous, band-limited, analog waveforms.
 
 ## Programming Style
 
@@ -64,11 +64,9 @@ Before we get started on the modulator, I want to comment on my programming styl
 
 Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
 
-Unlike some numerical-focused scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need into import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the annoying syntax.
+Unlike some numerical-focused scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need into import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the annoyances.
 
 ## Modulator Simulation
-
-@TODO: Add diagram with large workflow, channel encoding, preamble, etc.
 
 The three packages I rely on to write effective simulations in Python are
 
@@ -76,7 +74,9 @@ The three packages I rely on to write effective simulations in Python are
 2.  `matplotlib` for plotting
 3.  `scipy` for filter design
 
-For this first post we can get away without using `scipy`. To kick things off, let's import the packages:
+For this first post we can get away without using `scipy`. 
+
+To kick things off, let's import the packages:
 
 ``` python
 import numpy as np 
@@ -85,7 +85,7 @@ import matplotlib.pyplot as plt
 
 ### From byte arrays to complex QPSK symbols
 
-Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. It could be sensor data, text messages, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are groups of unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. It could be sensor data, text messages, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -98,7 +98,7 @@ payload = [
 
 #### Bytes to Bits
 
-Now that we have the payload, we can start progressively moving toward building the symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to implement this in Python. Here's the version that most closely follows what you might do in a language like C.
+Now that we have the payload, we can start progressively moving toward building the symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to do this in Python. Here's the version that most closely follows what you might do in a language like C.
 
 ``` python
 num_chars = len(payload)
@@ -121,7 +121,7 @@ i_bits = payload_bits[0::2]
 q_bits = payload_bits[1::2]
 ```
 
-Because the payload has an even number of bits, the lengths of `i_bits` and `q_bits` are the same. This means we can take a bit from each array, and map the bit pair to a point in the `XY`-plane. Here's one way to do this that takes advantage of `numpy`'s vectorization capabilities.
+Next, take a  bit from each array, and map the bit pair to a point in the `XY`-plane. Here's one way to do this that takes advantage of `numpy`'s vectorization capabilities.
 
 ``` python
 i_symbols = 2 * i_bits - 1
@@ -174,10 +174,10 @@ def root_raised_cosine(
 
 The function arguments give you control over the bandwidth of the output baseband waveform. Rather than spend a lot of time explaining this, let's keep moving through the modulator design. I think this is the best way to see how everything fits together.
 
-Okay, let's say we want to communicate at a rate of 1000 symbols per second and interpolate by 16 times. Let's keep `rate_i` at 1 and change `rate_o` to 16.
+Okay, let's say we want to communicate at a rate of 1000 symbols per second and interpolate by 16 times. We'll keep `rate_i` at 1 and change `rate_o` to 16.  The ratio of `rate_o` to `rate_i` should equal the amount we want to interpolate by.
 
 -   `delay` controls how many symbol periods you want the filter to last. I usually keep this at 5.
--   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5 - the higher the value, the higher the bandwidth.
+-   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5.  The higher the value, the higher the bandwidth.
 
 Here's how we create the shaping filter for this scenario:
 
@@ -197,7 +197,7 @@ plt.xlabel("Symbol Period")
 plt.ylabel("Amplitude")
 plt.grid()
 ```
-{{< figure src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" >}}
+{{< figure src="index_files/figure-markdown_strict/cell-9-output-1.png">}}
 <img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
 
 In case you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:
@@ -212,7 +212,7 @@ The next step in the process is to interpolate the symbols with the filter. Ther
 
 #### The easy way
 
-For the easy method, all we do is upsample the symbols by a factor of 16 and apply the filter using `numpy`'s convolution function:
+For the easy way, we upsample the symbol array by a factor of 16 and apply the filter using `numpy`'s convolution function:
 
 ``` python
 num_symbols = len(iq_symbols)
@@ -248,14 +248,19 @@ plt.xlabel("Time (ms)")
 plt.ylabel("Amplitude")
 plt.legend()
 ```
-{{< figure src="index_files/figure-markdown_strict/cell-12-output-1.png" width="675" height="429" >}}
-<img src="index_files/figure-markdown_strict/cell-12-output-1.png" width="675" height="429" />
+{{< figure src="index_files/figure-markdown_strict/cell-12-output-1.png" >}}
+<img src="index_files/figure-markdown_strict/cell-12-output-1.png"/>
 
 Can you spot why this is inefficient? Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
 
 #### The hard way
 
-This brings us to the harder, but more efficient way of doing this using *multirate signal processing*. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is try to give you some motivation, and some code that demonstrates the process.
+This brings us to the harder, but more efficient way of doing this using **multirate signal processing**. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about this stuff, here's a list of some authoritative books:
+
+* [Multirate Signal Processing for Communications Systems - Fredric J Harris](https://www.amazon.com/Multirate-Processing-Communication-Systems-Publishers/dp/877022210X/ref=asc_df_877022210X/?tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1&mcid=08126222a4593f0dac4cbeedbdc04b2d&tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1)
+* Multirate Signal Processing - Ronald Crochiere and Lawrence Rabiner
+* Multirate Systems and Filter Banks - P.P Vaidyanathan
+* Wavelets and Filter Banks - Gilbert Strang and Truong Nguyen
 
 Mulirate signal processing is all about restructuring the workload in a problem to improve
 computational efficiency. On a beefy processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, processing overhead becomes a concern.
@@ -317,10 +322,9 @@ plt.ylabel("Amplitude")
 plt.legend()
 ```
 {{< figure src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" >}}
-<img src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" />
+<img src="index_files/figure-markdown_strict/cell-15-output-1.png"/>
 
 Besides being slightly different lengths, the easy and hard ways give exactly the same results.
-Moving forward, I'm going to focus exclusively on the baseband signal we calculated from the hard, filter bank approach.
 
 ### How do we Validate the Implementation?
 
