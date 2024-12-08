@@ -1,7 +1,7 @@
 ---
 title: How to Build a Basic QPSK Modulator
 author: Joey Reed
-date: '2024-11-27'
+date: '2024-12-08'
 draft: false
 summary: A quick and dirty introduction to baseband QPSK modulation using Python.
 tags:
