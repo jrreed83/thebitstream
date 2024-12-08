@@ -23,7 +23,7 @@ Phase shift keying (PSK) is the discrete time version of analog phase modulation
 The equation for phase modulating a carrier sitting at $f$ Hz with an information bearing baseband signal $\phi (t)$ is
 
 $$
-  y(t) = \cos(2\pi f t + \phi (t)).
+y(t) = \cos(2\pi f t + \phi (t)).
 $$
 
 Turns out that this isn't a very helpful expression for developing a QPSK modulator because the carrier and baseband signals are intertwined. If we can rip them apart, the baseband signal can be synthesized digitally and converted to an analog waveform at transmission time, using commercial-off-the-shelf (COTS) mixers.
@@ -31,30 +31,30 @@ Turns out that this isn't a very helpful expression for developing a QPSK modula
 Fortunately, the fix is simple. We just need to apply one of the angle sum formulas you probably learned in highschool:
 
 $$
-  \cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)
+\cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)
 $$
 
 Appllying this to $y(t)$, we get
 
 $$
-  y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
+y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
 $$
 
 I don't like all the parenthesis. To clean it up, let's express this in terms of "I/Q modulation":
 
 $$
-  y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
+y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
 $$
 
 where $I(t)$ and $Q(t)$ are the so-called in-phase and quadrature signals. These signals pop up frequently in digital communications, and in our particular case
 
 $$
-    I(t) = \cos (\phi (t)) \text{ and } Q(t) = \sin(\phi(t)).
+I(t) = \cos (\phi (t)) \text{ and } Q(t) = \sin(\phi(t)).
 $$
 
-### What's the Point?
+## What's the Point?
 
-This post will be all about how to calculate $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) would transform the digital samples to a continuous analog waveform.
+This post will be all about how to calculate $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) and analog reconstruction filter would transform the digital samples to a respectable, continuous, analog waveform
 
 ## Programming Style
 
@@ -132,9 +132,9 @@ iq_symbols = i_symbols + 1j * q_symbols
 
 ### Pulse Shaping Filter
 
-Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a type of digital interpolation filter with properties you can tune in order to hit your bandwidth goals.
+Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter with properties that be tuned to achieve a certain bandwidth.
 
-The first pulse-shaping filter I ever learned about was the root-raised cosine filter. Here's a hand-rolled implementation (I really don't like looking at this function. There's probably a more elegant way to implement it, but it does work. ):
+The first pulse-shaping filter I ever learned about was the **root-raised cosine filter**. Here's a hand-rolled implementation (I really don't like looking at this function. There's probably a more elegant way to implement it, but it does work. ):
 
 ``` python
 def root_raised_cosine(
@@ -203,18 +203,8 @@ plt.grid()
 In case you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:
 
 $$
-\text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } 
+\text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } \times 2
 $$
-
-$$ 
-\frac{\text{samples}}{\text{second}} = \frac{\text{samples}}{\text{symbol}} \times \frac{\text{symbols}}{\text{second}}
-$$
-
-``` python
-samples_per_symbol = 16
-symbols_per_second = 1000
-samples_per_second = samples_per_symbol * symbols_per_second
-```
 
 ### Interpolation Process
 
@@ -222,7 +212,7 @@ The next step in the process is to interpolate the symbols with the filter. Ther
 
 #### The easy way
 
-For the easy method, all we do is upsample the symbols by a factor of 16 and apply the filter.
+For the easy method, all we do is upsample the symbols by a factor of 16 and apply the filter using `numpy`'s convolution function:
 
 ``` python
 num_symbols = len(iq_symbols)
@@ -232,7 +222,22 @@ iq_symbols_upsampled[::16] = iq_symbols
 baseband_waveform = np.convolve(iq_symbols_upsampled, shaping_filter)
 ```
 
-And here's the what the in-phase (blue) and quadrature (orange) waveforms look like:
+If you're not familiar with convolution, you can think of it as rolling multiply and accumulate function. The filter walks across the input one sample at a time, multiplying the filter coefficients with the appropriate input coefficients and adding the results.
+
+To plot the output with respect to time, we need to calculate the number of seconds per sample (aka sample rate) with a unit conversion:
+$$ 
+\frac{\text{samples}}{\text{second}} = \frac{\text{samples}}{\text{symbol}} \times \frac{\text{symbols}}{\text{second}}
+$$
+
+Hesre's the accompanying code:
+
+``` python
+samples_per_symbol = 16
+symbols_per_second = 1000
+samples_per_second = samples_per_symbol * symbols_per_second
+```
+
+Now let's plot the waveform:
 
 ``` python
 num_baseband_samples = len(baseband_waveform)
@@ -264,8 +269,7 @@ filter_bank = np.reshape(
 )
 ```
 
-Essentially, we're just taking our filter with 161 coefficient pulse shaping filter and rearranging into 16 smaller filters, with 11 coefficients each. Tacking on 15 zeros at the end of the original shaping filter is required to get the math to work. We then apply the filter bank to the original
-symbol array using a custom designed algorithm. No upsampling necessary.
+Essentially, we're just taking our filter with 161 coefficient pulse shaping filter and rearranging into 16 smaller filters, with 11 coefficients each. Tacking on 15 zeros at the end of the original shaping filter is required to get the reshape operation to work out. We then apply the filter bank to the original symbol array using a custom designed algorithm. No upsampling necessary.
 
 ``` python
 iq_symbols_1 = np.concatenate((iq_symbols, np.zeros(16)))
@@ -315,33 +319,29 @@ plt.legend()
 <img src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" />
 
 Besides being slightly different lengths, the easy and hard ways give exactly the same results.
+Moving forward, I'm going to focus exclusively on the baseband signal we calculated from the hard, filter bank approach.
 
-### How we Validate the Implementation
+### How do we Validate the Implementation?
 
-Moving forward, I'm going to focus exclusively on the baseband signal we calculated from the hard, filter bank approach. A great question to ask at this point is
+A great question to ask at this point is
 
-> "yeah, but how do you know there isn't a bug?"
+> "yeah, but how do you know this is correct?"
 
 Great question😊!
 
-A constellation is just a scatter plot of the complex symbols. The in-phase part of each symbol goes on the horizontal axis and the quadrature-part goes on the vertical axis.
+My short, but terrible answer to this question is
 
-``` python
-#plt.figure(1)
-#plt.plot(+1, +1, "rx", markersize=12)
-#plt.plot(-1, +1, "rx", markersize=12)
-#plt.plot(-1, -1, "rx", markersize=12)
-#plt.plot(+1, -1, "rx", markersize=12)
-#plt.plot(np.real(x2), np.imag(x2), "g.", alpha=0.7)
+> "I can tell by how the waveform looks".
 
-
-#plt.xlim([-1.5, +1.5])
-#plt.ylim([-1.5, +1.5])
-#plt.grid()
-```
-
-The constellation diagram for the ideal symbols, is extremely boring. It's extremely useful for receiver development though. When noise starts getting added to the signals, the small green circles get larger and more diffuse.
+We'll give an actual answer in the next post in this series.
 
 ## Conclusion
 
-This was a longer post than I thought it would be.
+If you read until the end, thank you. This was much longer than I originally intended, but there was a lot to cover:
+
+1.  We went through some math that described how QPSK modulation works
+2.  Described how to go from a digital payload represented as an array of bytes to an array of QPSK symbols.
+3.  Discussed pulse shaping filters.
+4.  Touched on the benefits of multirate signal processing.
+
+Next time, we'll justify why the baseband waveform we synthesized properly encodes the payload.
