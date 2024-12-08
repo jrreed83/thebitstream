@@ -54,17 +54,17 @@ $$
 
 ## What's the Point?
 
-This post will be all about how to calculate $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) and analog reconstruction filter would transform the digital samples to a respectable, continuous, analog waveform
+This post will be all about how to calculate $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) and analog reconstruction filter transform the digital samples to a continuous, band-limited, analog waveforms.
 
 ## Programming Style
 
-Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. Eventually, I want to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why.
+Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. I want to be able to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why.
 
 ## My Preferred Toolchain
 
 Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
 
-Unlike some numerical-focused scripting languages I've used (Matlab and Julia), efficient arrays aren't built into the language. They need to be accessed through third-party, open source, packages. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the annoying syntax.
+Unlike some numerical-focused scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need into import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the annoying syntax.
 
 ## Modulator Simulation
 
@@ -85,7 +85,7 @@ import matplotlib.pyplot as plt
 
 ### From byte arrays to complex QPSK symbols
 
-Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are groups of unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. It could be sensor data, text messages, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak numbers are groups of unsigned integers that also spell out words or phrases when expressed in hexadecimal (aka base 16 numbers). Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -134,7 +134,7 @@ iq_symbols = i_symbols + 1j * q_symbols
 
 Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter with properties that be tuned to achieve a certain bandwidth.
 
-The first pulse-shaping filter I ever learned about was the **root-raised cosine filter**. Here's a hand-rolled implementation (I really don't like looking at this function. There's probably a more elegant way to implement it, but it does work. ):
+The first pulse-shaping filter I ever learned about was the **root-raised cosine filter**. My hand-rolled version (shown below), is not the prettiest code I've ever written, but it works.
 
 ``` python
 def root_raised_cosine(
@@ -197,7 +197,7 @@ plt.xlabel("Symbol Period")
 plt.ylabel("Amplitude")
 plt.grid()
 ```
-
+{{< figure src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" >}}
 <img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
 
 In case you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:
@@ -222,14 +222,14 @@ iq_symbols_upsampled[::16] = iq_symbols
 baseband_waveform = np.convolve(iq_symbols_upsampled, shaping_filter)
 ```
 
-If you're not familiar with convolution, you can think of it as rolling multiply and accumulate function. The filter walks across the input one sample at a time, multiplying the filter coefficients with the appropriate input coefficients and adding the results.
+If you're not familiar with convolution, you can think of it as a walking multiply and accumulator. The filter walks across the input one sample at a time, point-wise multiplies the filter coefficients with a segment of the filter input input coefficients, and adds the results.
 
-To plot the output with respect to time, we need to calculate the number of seconds per sample (aka sample rate) with a unit conversion:
+To plot the output with respect to time, we need to calculate the number of samples per second (aka sample rate) with a unit conversion:
 $$ 
 \frac{\text{samples}}{\text{second}} = \frac{\text{samples}}{\text{symbol}} \times \frac{\text{symbols}}{\text{second}}
 $$
 
-Hesre's the accompanying code:
+Here's the accompanying code:
 
 ``` python
 samples_per_symbol = 16
@@ -237,7 +237,7 @@ symbols_per_second = 1000
 samples_per_second = samples_per_symbol * symbols_per_second
 ```
 
-Now let's plot the waveform:
+Now let's plot the waveform.
 
 ``` python
 num_baseband_samples = len(baseband_waveform)
@@ -248,18 +248,19 @@ plt.xlabel("Time (ms)")
 plt.ylabel("Amplitude")
 plt.legend()
 ```
-
+{{< figure src="index_files/figure-markdown_strict/cell-12-output-1.png" width="675" height="429" >}}
 <img src="index_files/figure-markdown_strict/cell-12-output-1.png" width="675" height="429" />
 
-Can you spot why this is inefficient? Yep, it's related to the upsampling step. Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
+Can you spot why this is inefficient? Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
 
 #### The hard way
 
-This brings us to the harder, but more efficient way of doing this using *multirate signal processing*. There's no way I can explain everything you need to know about multirate signal processing here. What I can do is try to give you the big picture, with some code that demonstrates the process.
+This brings us to the harder, but more efficient way of doing this using *multirate signal processing*. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is try to give you some motivation, and some code that demonstrates the process.
 
-The selling point of multirate signal processing is you can drastically improve computational efficiency by restructuring and rearranging the original task. On a beefy processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, you'll start worrying about this.
+Mulirate signal processing is all about restructuring the workload in a problem to improve
+computational efficiency. On a beefy processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, processing overhead becomes a concern.
 
-To improve the efficieny of the pulse shaping task, we need to transform the root-raised cosine filter into a two-dimensional *filter bank*.
+To apply multirate signal processing to the pulse shaping task, we transform the 161 element, single dimensional array into a two-dimensional *filter bank* consisting of 16 rows and 11 columns. Yes, the number of rows must match the number of samples per symbol.
 
 ``` python
 filter_bank = np.reshape(
@@ -269,12 +270,12 @@ filter_bank = np.reshape(
 )
 ```
 
-Essentially, we're just taking our filter with 161 coefficient pulse shaping filter and rearranging into 16 smaller filters, with 11 coefficients each. Tacking on 15 zeros at the end of the original shaping filter is required to get the reshape operation to work out. We then apply the filter bank to the original symbol array using a custom designed algorithm. No upsampling necessary.
+Tacking on 15 zeros at the end of the shaping filter makes the reshaping workout.The filter bank is applied to the input using a custom algorithm. No upsampling required.
 
 ``` python
 iq_symbols_1 = np.concatenate((iq_symbols, np.zeros(16)))
 buffer = np.zeros(11, dtype=complex)
-baseband_samples_fb = np.zeros(len(iq_symbols_1) * 16, dtype=complex)
+baseband_samples_fb = np.zeros(len(iq_symbols_1) * samples_per_symbol, dtype=complex)
 k = 0
 for i in range(len(iq_symbols_1)):
     buffer[10] = buffer[9]
@@ -289,7 +290,7 @@ for i in range(len(iq_symbols_1)):
     buffer[ 1] = buffer[0]
     buffer[ 0] = iq_symbols_1[i]
 
-    for index in range(16):
+    for index in range(samples_per_symbol):
         baseband_samples_fb[k+index] = np.sum(buffer * filter_bank[index,:])
 
     k += 16
@@ -315,7 +316,7 @@ plt.xlabel("Time (ms)")
 plt.ylabel("Amplitude")
 plt.legend()
 ```
-
+{{< figure src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" >}}
 <img src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" />
 
 Besides being slightly different lengths, the easy and hard ways give exactly the same results.
