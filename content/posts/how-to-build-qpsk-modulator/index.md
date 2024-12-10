@@ -5,28 +5,28 @@ date: '2024-12-08'
 draft: false
 summary: A quick and dirty introduction to baseband QPSK modulation using Python.
 tags:
-  - communications
-  - digital modulation
-  - filters
+  - digital communications
 jupyter: python3
 format: hugo
 math: true
 ---
 
 
-**Quadrature Phase Shift Keying**, or QPSK for short, is a digital modulation technique that encodes information onto a carrier wave by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified **symbol rate**. Each phase shift is called a **symbol**. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
-
-Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. Analog modulators are built out of discrete components and tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
+**Quadrature Phase Shift Keying**, or QPSK for short, is a digital modulation technique that encodes information onto a carrier wave by applying $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ phase shifts at a fixed rate, called the **symbol rate**. Each phase shift is called a **symbol**. For QPSK, a symbol is represented by 2 bits.   
 
 ## Derivation
 
-The equation for phase modulating a carrier sitting at $f$ Hz with an information bearing baseband signal $\phi (t)$ is
+To understand QPSK, we need to start with analog phase modulation.  Analog modulation has been around for a long time and doesn't depend on fancy, sophisticated integrated circuits or computers.  Instead, it relies on cleverly arranging circuit elements to continously tweak some property of a sinusoidal signal.  
+
+Fortunately for us, scientists and engineers discovered how to model analog systems mathematically.  The equation for phase modulating a carrier with frequency $f$ Hz with a **baseband signal** $\phi(t)$ is    
 
 $$
 y(t) = \cos(2\pi f t + \phi (t)).
 $$
 
-Turns out that this isn't a very helpful expression for developing a QPSK modulator because the carrier and baseband signals are intertwined. If we can rip them apart, the baseband signal can be synthesized digitally and converted to an analog waveform at transmission time, using commercial-off-the-shelf (COTS) mixers.
+All the information is in the baseband signal.  The carrier just *carries* it to where it needs to go.
+
+This formula is not a very useful way to develop QPSK modulation because the carrier and information signal appear together under the $\cos$ function. We need to rip them apart so the baseband signal can be synthesized digitally and converted to an analog waveform at the right moment.
 
 Fortunately, the fix is simple. We just need to apply one of the angle sum formulas you probably learned in high school:
 
@@ -40,17 +40,15 @@ $$
 y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
 $$
 
-I don't like all the parenthesis. To clean it up, let's express this in terms of "I/Q modulation":
+I don't like all the parenthesis. To clean it up, let's substitute $I(t)$ for $\cos (\phi (t))$ and
+$Q(t)$ for $\sin(\phi (t))$:
 
 $$
 y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
 $$
 
-where $I(t)$ and $Q(t)$ are the so-called in-phase and quadrature signals. These signals pop up frequently in digital communications, and in our particular case
-
-$$
-I(t) = \cos (\phi (t)) \text{ and } Q(t) = \sin(\phi(t)).
-$$
+$I(t)$ and $Q(t)$ are called  **in-phase** and **quadrature** signals, and show up frequently in digital communications.
+ 
 
 ## What's the Point?
 

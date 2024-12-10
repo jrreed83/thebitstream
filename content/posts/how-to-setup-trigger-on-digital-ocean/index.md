@@ -1,12 +1,12 @@
 ---
 title: How to setup a simple AI automation with Trigger.dev
 author: Joey Reed
-date: 2024-12-02
+date: 2024-12-09
 draft: true
 summary:   
-tags: ["automation", "web development", "AI", "Google Sheets"]
+tags: ["automation"]
 ---
 
-
+Working at a small company requires you to find ways to improve efficiency.
 
 

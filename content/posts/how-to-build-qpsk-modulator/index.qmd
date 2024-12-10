@@ -222,6 +222,12 @@ iq_symbols_upsampled[::16] = iq_symbols
 baseband_waveform = np.convolve(iq_symbols_upsampled, shaping_filter)
 ```
 
+```{python}
+yy = np.real(baseband_waveform * np.exp(2*np.pi*1j*2000*np.arange(len(baseband_waveform))/16000))
+plt.plot(yy)
+plt.plot(np.cos(2*np.pi*2000*np.arange(len(baseband_waveform))/16000))
+plt.xlim([300, 400])
+```
 If you're not familiar with convolution, you can think of it as a walking multiply and accumulator.  The filter walks across the input one sample at a time, point-wise multiplies the filter coefficients with a segment of the filter input input coefficients, and adds the results.
 
 To plot the output with respect to time, we need to calculate the number of samples per second (aka sample rate) with a unit conversion:

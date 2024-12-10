@@ -4,7 +4,7 @@ author: "Joey Reed"
 date: "2024-11-17"
 draft: false
 summary: Get a glimpse into what the high-level planning stages of a digital communications project looks like. 
-tags: ["communications"]
+tags: ["digital communications"]
 ---
 
 I don't think it's hyperbole to claim that digital communications has impacted nearly every aspect of life on Earth.  It's so ingrained in daily life that it's easy to take it for granted.  You might even say it's boring. I'm starting a series of posts that will delve a little deeper into the world of digital communications.  I'm going to describe some of the scientific and engineering magic behind it, and explain how it could broaden your technical know-how .  It's chock-full of algorithms, problem-solving strategies, mathematical techniques, theory, and physical principles that can be used in pretty much any technical discipline.
