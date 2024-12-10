@@ -14,7 +14,7 @@ math: true
 ---
 
 
-*Quadrature Phase Shift Keying*, or QPSK for short, is a digital modulation technique that encodes information onto a carrier wave by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified *symbol rate*. Each phase shift is called a *symbol*. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
+**Quadrature Phase Shift Keying**, or QPSK for short, is a digital modulation technique that encodes information onto a carrier wave by introducing phase shifts of $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ at a specified **symbol rate**. Each phase shift is called a **symbol**. For QPSK, a symbol is represented by 2 bits. Higher order Quadrature Amplitude Modulation (QAM) schemes use more bits per symbol.
 
 Phase shift keying (PSK) is the discrete time version of analog phase modulation. Analog modulation predates the invention of integrated circuits, even transistors. Analog modulators are built out of discrete components and tend to be simpler and consume less power than their digital counterparts. However, digital modulators are programmed with processors, making them far more flexible and precise.
 
@@ -54,7 +54,7 @@ $$
 
 ## What's the Point?
 
-This post is all about calculating $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, a **digital to analog converter** (DAC) and analog reconstruction filter transform the digital samples to a continuous, band-limited, analog waveforms.
+This post is all about calculating $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, you'd use a **digital to analog converter** (DAC) and **reconstruction filter** to transform the digital samples into a smooth, continuous, analog waveform.  We'll talk about interfacing with DACs and designing reconstruction filters sometime in the future.
 
 ## Programming Style
 
@@ -255,7 +255,7 @@ Can you spot why this is inefficient? Upsampling distributes the samples over a 
 
 #### The hard way
 
-This brings us to the harder, but more efficient way of doing this using **multirate signal processing**. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about this stuff, here's a list of some authoritative books:
+This brings us to the harder, but more efficient way of doing this using **multirate signal processing**. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about it, here's a list of some authoritative books:
 
 * [Multirate Signal Processing for Communications Systems - Fredric J Harris](https://www.amazon.com/Multirate-Processing-Communication-Systems-Publishers/dp/877022210X/ref=asc_df_877022210X/?tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1&mcid=08126222a4593f0dac4cbeedbdc04b2d&tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1)
 * Multirate Signal Processing - Ronald Crochiere and Lawrence Rabiner
