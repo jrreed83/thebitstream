@@ -11,46 +11,59 @@ format: hugo
 math: true
 ---
 
+Before transistors, everything in communications was analog.  Modems were built by slide-rule wielding engineers with an incredible, almost magical, ability to finely control currents and voltages in specially designed circuits.     
 
-**Quadrature Phase Shift Keying**, or QPSK for short, is a digital modulation technique that encodes information onto a carrier wave by applying $45^\circ$, $135^\circ$, $225^\circ$, or $315^\circ$ phase shifts at a fixed rate, called the **symbol rate**. Each phase shift is called a **symbol**. For QPSK, a symbol is represented by 2 bits.   
+The proliferation of transistors and integrated circuits in the 1950's and 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new
+digital paradigm to improve their existing product line , or maybe invent something completely new.        
 
-## Derivation
+**Phase Shift Keying** (PSK) is the digital evolution of older analog phase modulation systems. Phase modulation encodes information in the phase of some higher frequency signal.  This happens in continuous time by tweaking some specific, physical property of the circuit.  There's no clear saparation between the information and the signal that carries it to its destination.  It all happens in the circuit.
 
-To understand QPSK, we need to start with analog phase modulation.  Analog modulation has been around for a long time and doesn't depend on fancy, sophisticated integrated circuits or computers.  Instead, it relies on cleverly arranging circuit elements to continously tweak some property of a sinusoidal signal.  
 
-Fortunately for us, scientists and engineers discovered how to model analog systems mathematically.  The equation for phase modulating a carrier with frequency $f$ Hz with a **baseband signal** $\phi(t)$ is    
+
+It encodes information onto a high frequency carrier wave using a discretized sequence of strategic phase shifts.  
+
+
+
+Each individual phase shift is called a **symbol** and is represented by a certain number of bits.  The simplest form of PSK is BPSK (binary shift keying), and it uses 1 bit to represent each symbol.
+QPSK (quadrature shift keying) is slightly more complicated than BPSK and uses 2 bits per symbol.
+
+## Phase Modulation
+
+If you crack open a communications book, you'll usually see phase modulation described mathematically like this
 
 $$
 y(t) = \cos(2\pi f t + \phi (t)).
 $$
 
-All the information is in the baseband signal.  The carrier just *carries* it to where it needs to go.
+* $f$ is freqency in Hz (aka cycles per second).
+* $t$ is time in seconds.
+* $\phi(t)$ is the continuous time phase shift that encodes information.
 
-This formula is not a very useful way to develop QPSK modulation because the carrier and information signal appear together under the $\cos$ function. We need to rip them apart so the baseband signal can be synthesized digitally and converted to an analog waveform at the right moment.
+The biggest problem with the equation is that the waveform we'd like to digitize, $\phi(t)$, and the higher frequency carrier that we'd like to keep as analog, are jumbled together.  We need to find a way to rip them apart.
 
-Fortunately, the fix is simple. We just need to apply one of the angle sum formulas you probably learned in high school:
+Fortunately, the only thing we need is high school math!  Do you remember those angle sum formulas from trig or precalculus?  Let's take the angle sum formula for $\cos$:
 
 $$
 \cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)
 $$
 
-Applying this to $y(t)$, we get
+and apply it to $y(t)$.  Here's the result:
 
 $$
 y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
 $$
 
-I don't like all the parenthesis. To clean it up, let's substitute $I(t)$ for $\cos (\phi (t))$ and
+I don't like all the parenthesis.  Let's clean it up by substituting $I(t)$ for $\cos (\phi (t))$ and
 $Q(t)$ for $\sin(\phi (t))$:
 
 $$
 y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
 $$
 
-$I(t)$ and $Q(t)$ are called  **in-phase** and **quadrature** signals, and show up frequently in digital communications.
- 
+It's not too important right now, but just so you know $I(t)$ and $Q(t)$ are called  **in-phase** and **quadrature** signals, and show up frequently in digital communications.
 
-## What's the Point?
+
+## What about QPSK
 
 This post is all about calculating $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, you'd use a **digital to analog converter** (DAC) and **reconstruction filter** to transform the digital samples into a smooth, continuous, analog waveform.  We'll talk about interfacing with DACs and designing reconstruction filters sometime in the future.
 
@@ -255,7 +268,7 @@ Can you spot why this is inefficient? Upsampling distributes the samples over a 
 
 This brings us to the harder, but more efficient way of doing this using **multirate signal processing**. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about it, here's a list of some authoritative books:
 
-* [Multirate Signal Processing for Communications Systems - Fredric J Harris](https://www.amazon.com/Multirate-Processing-Communication-Systems-Publishers/dp/877022210X/ref=asc_df_877022210X/?tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1&mcid=08126222a4593f0dac4cbeedbdc04b2d&tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1)
+* [Multirate Signal Processing for Communications Systems - Fredric J Harris](https://www.amazon.com/Multirate-Processing-Communication-Systems-Publishers/dp/877022210X/ref=asc_df_877022210X/?tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1&mcid=08126222a4593f0dac4cbeedbdc04b2d&tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1 "target=_blank")
 * Multirate Signal Processing - Ronald Crochiere and Lawrence Rabiner
 * Multirate Systems and Filter Banks - P.P Vaidyanathan
 * Wavelets and Filter Banks - Gilbert Strang and Truong Nguyen
