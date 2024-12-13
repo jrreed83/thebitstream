@@ -11,21 +11,16 @@ format: hugo
 math: true
 ---
 
-Before transistors, everything in communications was analog.  Modems were built by slide-rule wielding engineers with an incredible, almost magical, ability to finely control currents and voltages in specially designed circuits.     
+Before transistors, everything in communications was analog.  Modems were built by slide-rule wielding engineers with an almost magical ability to control voltages and currents on complicated circuit boards.     
 
-The proliferation of transistors and integrated circuits in the 1950's and 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new
-digital paradigm to improve their existing product line , or maybe invent something completely new.        
+The proliferation of integrated circuits in the 1950's and 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new
+digital paradigm to improve their existing product line, or maybe invent something completely new.          
 
-**Phase Shift Keying** (PSK) is the digital evolution of older analog phase modulation systems. Phase modulation encodes information in the phase of some higher frequency signal.  This happens in continuous time by tweaking some specific, physical property of the circuit.  There's no clear saparation between the information and the signal that carries it to its destination.  It all happens in the circuit.
+Digital **Phase Shift Keying** (PSK) came from looking at analog phase modulation systems with a fresh set of eyes.  In phase modulation, information is encoded in the phase of a high frequency carrier signal using specially designed circuits.      
 
+Modern PSK is very different.  Rather than spend lots of time designing custom circuitry, most of the modem design is done programmatically in complex integrated circuits.  As a result, these systems tend to consume more power, but have the benefit of being extremely flexible.
 
-
-It encodes information onto a high frequency carrier wave using a discretized sequence of strategic phase shifts.  
-
-
-
-Each individual phase shift is called a **symbol** and is represented by a certain number of bits.  The simplest form of PSK is BPSK (binary shift keying), and it uses 1 bit to represent each symbol.
-QPSK (quadrature shift keying) is slightly more complicated than BPSK and uses 2 bits per symbol.
+In this post, we're going to develop the first stages of building a PSK simulation.  Like the engineers from the past, we're going to start with analog systems. 
 
 ## Phase Modulation
 
@@ -39,7 +34,7 @@ $$
 * $t$ is time in seconds.
 * $\phi(t)$ is the continuous time phase shift that encodes information.
 
-The biggest problem with the equation is that the waveform we'd like to digitize, $\phi(t)$, and the higher frequency carrier that we'd like to keep as analog, are jumbled together.  We need to find a way to rip them apart.
+The problem with the equation is that the waveform we'd like to digitize, $\phi(t)$, and the higher frequency carrier that we'd like to keep as analog, are jumbled together.  We need to find a way to rip them apart.
 
 Fortunately, the only thing we need is high school math!  Do you remember those angle sum formulas from trig or precalculus?  Let's take the angle sum formula for $\cos$:
 
@@ -60,7 +55,13 @@ $$
 y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
 $$
 
-It's not too important right now, but just so you know $I(t)$ and $Q(t)$ are called  **in-phase** and **quadrature** signals, and show up frequently in digital communications.
+This is called **I/Q-modulation**.  
+
+## QPSK
+
+Quadrature Phase Shift Keying, or QPSK, is a form of PSK that uses 4 phase shifts: $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$.  Each phase shift is called a **symbol**, and  represented by 2 bits.        
+
+![](figures/constellation.png)
 
 
 ## What about QPSK
@@ -96,7 +97,7 @@ import matplotlib.pyplot as plt
 
 ### From byte arrays to complex QPSK symbols
 
-Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. It could be sensor data, text messages, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak" for this sort of thing. Hex-speak is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. It could be sensor data, text messages, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak", which is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -337,7 +338,7 @@ plt.legend()
 
 Besides being slightly different lengths, the easy and hard ways give exactly the same results.
 
-### How do we Validate the Implementation?
+### Validation
 
 A great question to ask at this point is
 
@@ -345,11 +346,11 @@ A great question to ask at this point is
 
 Great question😊!
 
-My short, but terrible answer to this question is
+My inadaquate answer is
 
 > "I can tell by how the waveform looks".
 
-We'll give an actual answer in the next post in this series.
+I'll give a better answer next time.
 
 ## Conclusion
 
@@ -360,4 +361,4 @@ If you read until the end, thank you. This was much longer than I originally int
 3.  Discussed pulse shaping filters.
 4.  Touched on the benefits of multirate signal processing.
 
-Next time, we'll justify why the baseband waveform we synthesized properly encodes the payload.
+Next time, I'll explain how to prove that the baseband waveform does properly encode the payload.
