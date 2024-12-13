@@ -11,22 +11,26 @@ format: hugo
 math: true
 ---
 
+In this post, we're going to start developing a digital modulator based on **Quadrature Phase Shift Keying**, or QPSK for short.  For context, we'll start with a little history, and a little math. After that, we'll start getting into the nuts-and-bolts of how it all works.
+
+## Some Background 
+
 Before transistors, everything in communications was analog.  Modems were built by slide-rule wielding engineers with an almost magical ability to control voltages and currents on complicated circuit boards.     
 
 The proliferation of integrated circuits in the 1950's and 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new
 digital paradigm to improve their existing product line, or maybe invent something completely new.          
 
-Digital **Phase Shift Keying** (PSK) came from looking at analog phase modulation systems with a fresh set of eyes.  In phase modulation, information is encoded in the phase of a high frequency carrier signal using specially designed circuits.      
+Digital **Phase Shift Keying** (PSK) came from looking at analog phase modulation systems with a fresh set of eyes.  
 
-Modern PSK modulation is very different.  Most of the modem design work involves writing programs and algorithms that produce sequences of discrete-time digitial samples.  Converting these samples to a well-behaved analog signal is almost an after thought.  Digital-to-analog conversion hardware is widely available, cheap, and pretty easy to use.   
+In classic analog phase modulation, information is encoded in the phase of a high frequency carrier signal using specially designed circuits.  
 
-You can be a communications engineer without knowing anything about circuit design.  It's not a great idea, but it's possible.  
+Modern PSK technology is very different.  Most of the modem design work involves writing programs and algorithms that produce sequences of discrete-time digitial samples.  While this tends to result in less power-efficient systems, you get the benefit of improved precision and flexibility.  
 
-As a result, these systems tend to consume more power, but have the benefit of being extremely flexible and precise.
+Converting digital samples to a well-behaved analog signal is almost an after thought.  Digital-to-analog conversion hardware is widely available, cheap, and pretty easy to use.  These days, it's possible to be communications engineer without knowing anything about circuit design or electronics.  I'm not advocating for this, it's just reality.
 
-In this post, we're going to develop the first stages of a PSK simulation.  Like the engineers from the past, we'll start the process by looking at phase modulation. 
+Even though PSK and phase modulation are engineered in different ways, the mathematical principles that they operate by are the same.     
 
-## Phase Modulation
+## Phase Modulation to PSK 
 
 If you crack open a communications book, you'll usually see phase modulation described mathematically like this
 
@@ -61,16 +65,15 @@ $$
 
 This is called **I/Q-modulation**.  
 
+
 ## QPSK
 
+Besides referencing at the beginning of this post, I haven't mentioned QPSK at all.  
 Quadrature Phase Shift Keying, or QPSK, is a form of PSK that uses 4 phase shifts: $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$.  Each phase shift is called a **symbol**, and  represented by 2 bits.        
 
 ![](figures/constellation.png)
 
 
-## What about QPSK
-
-This post is all about calculating $I(t)$ and $Q(t)$ at discrete moments in time. This is what makes it digital. In a real system, you'd use a **digital to analog converter** (DAC) and **reconstruction filter** to transform the digital samples into a smooth, continuous, analog waveform.  We'll talk about interfacing with DACs and designing reconstruction filters sometime in the future.
 
 ## Programming Style
 
@@ -226,7 +229,7 @@ $$
 
 The next step in the process is to interpolate the symbols with the filter. There's an inefficient, easy way, to do this and an efficient, more complex way to do this. Let's start with the easy way.
 
-#### The easy way
+#### Straight Convolution - The Easy Way
 
 For the easy way, we upsample the symbol array by a factor of 16 and apply the filter using `numpy`'s convolution function:
 
@@ -267,21 +270,21 @@ plt.legend()
 {{< figure src="index_files/figure-markdown_strict/cell-12-output-1.png" >}}
 <img src="index_files/figure-markdown_strict/cell-12-output-1.png"/>
 
-Can you spot why this is inefficient? Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
+Can you spot the inefficieny? Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
 
-#### The hard way
+#### Multirate Signal Processing - The Hard Way
 
-This brings us to the harder, but more efficient way of doing this using **multirate signal processing**. There's no way I can explain everything about multirate signal processing here. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about it, here's a list of some authoritative books:
+This brings us to the harder, but more efficient way of doing this based on **multirate signal processing**. There's no way I can explain everything about multirate signal processing in one blog article. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about it, here's a list of some authoritative books:
 
 * [Multirate Signal Processing for Communications Systems - Fredric J Harris](https://www.amazon.com/Multirate-Processing-Communication-Systems-Publishers/dp/877022210X/ref=asc_df_877022210X/?tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1&mcid=08126222a4593f0dac4cbeedbdc04b2d&tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1 "target=_blank")
 * Multirate Signal Processing - Ronald Crochiere and Lawrence Rabiner
 * Multirate Systems and Filter Banks - P.P Vaidyanathan
 * Wavelets and Filter Banks - Gilbert Strang and Truong Nguyen
 
-Mulirate signal processing is all about restructuring the workload in a problem to improve
-computational efficiency. On a beefy processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, processing overhead becomes a concern.
+Mulirate signal processing is all about restructuring the workload to improve
+computational efficiency. On a powerful processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, processing overhead becomes a concern.
 
-To apply multirate signal processing to the pulse shaping task, we transform the 161 element, single dimensional array into a two-dimensional *filter bank* consisting of 16 rows and 11 columns. Yes, the number of rows must match the number of samples per symbol.
+To apply multirate signal processing to the pulse shaping task, we start by transforming the 161 element, single dimensional array into a two-dimensional *filter bank* consisting of 16 rows and 11 columns. Yes, the number of rows must match the number of samples per symbol.
 
 ``` python
 filter_bank = np.reshape(
