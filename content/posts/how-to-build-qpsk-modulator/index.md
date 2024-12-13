@@ -18,9 +18,13 @@ digital paradigm to improve their existing product line, or maybe invent somethi
 
 Digital **Phase Shift Keying** (PSK) came from looking at analog phase modulation systems with a fresh set of eyes.  In phase modulation, information is encoded in the phase of a high frequency carrier signal using specially designed circuits.      
 
-Modern PSK is very different.  Rather than spend lots of time designing custom circuitry, most of the modem design is done programmatically in complex integrated circuits.  As a result, these systems tend to consume more power, but have the benefit of being extremely flexible.
+Modern PSK modulation is very different.  Most of the modem design work involves writing programs and algorithms that produce sequences of discrete-time digitial samples.  Converting these samples to a well-behaved analog signal is almost an after thought.  Digital-to-analog conversion hardware is widely available, cheap, and pretty easy to use.   
 
-In this post, we're going to develop the first stages of building a PSK simulation.  Like the engineers from the past, we're going to start with analog systems. 
+You can be a communications engineer without knowing anything about circuit design.  It's not a great idea, but it's possible.  
+
+As a result, these systems tend to consume more power, but have the benefit of being extremely flexible and precise.
+
+In this post, we're going to develop the first stages of a PSK simulation.  Like the engineers from the past, we'll start the process by looking at phase modulation. 
 
 ## Phase Modulation
 
