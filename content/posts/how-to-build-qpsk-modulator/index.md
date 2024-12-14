@@ -1,9 +1,9 @@
 ---
 title: How to Build a Basic QPSK Modulator
 author: Joey Reed
-date: '2024-12-08'
+date: '2024-12-14'
 draft: false
-summary: A quick and dirty introduction to baseband QPSK modulation using Python.
+summary: An introduction to baseband QPSK modulation in Python.
 tags:
   - digital communications
 jupyter: python3
@@ -11,32 +11,28 @@ format: hugo
 math: true
 ---
 
-In this post, we're going to start developing a digital modulator based on **Quadrature Phase Shift Keying**, or QPSK for short.  For context, we'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.
+In this post, we're going to go through the early stages of building a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is one of the most critical pieces of a communucation system.  It's the device responsible for taking the data you want to transmit, and using it to modify a characteristic of a high carrier frequency signal.  Usually the phase, frequency, or amplitude.  Without modulators, world-wide communication would not be possible!   
 
-## Some Background 
+We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  The code I'll present and explain later on is the same type of code I write when building production-quality systems. 
 
-Before transistors, everything in communications was analog.  Modems were built by slide-rule wielding engineers with an almost magical ability to control voltages and currents on complicated circuit boards.     
 
-The proliferation of integrated circuits in the 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new digital paradigm to improve their existing product line, or maybe invent something completely new.          
+## Background and Motivation
 
-**Phase Shift Keying** (PSK) is a great example.  PSK is very popular digital modulation technique based on "digitizing" analog phase modulation.  Good phase modulation systems are difficult to design, which is probably why you've heard of AM radio (amplitude modulation), FM radio (frequency modulation), but not PM radio. 
+Before transistors, communications was depended on analog technology.  Modems were built by slide-rule wielding engineers with a magical ability to control voltages and currents on complicated circuit boards.     
 
-In classic analog phase modulation, information is encoded in the phase of a high frequency carrier signal using special circuitry.  The encoding process is designed into the circuit, and it happens in continuous time.  
+The proliferation of integrated circuits in the 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new digital paradigm to improve existing product , or maybe invent something completely new.          
 
-In modern PSK, the information used to modulate the carrier is synthesized in a seperate digital process built by programming integrated circuits.  This process generates a sequence of digital, discrete time pulses that are ultimately converted to an analog waveform using
+**Phase Shift Keying** (PSK) is a great example of this change in mindset.  PSK is very popular digital modulation technique based on "digitizing" analog phase modulation.  Good phase modulation systems are difficult to design and are not common.  This is probably why you've heard of AM radio (amplitude modulation), FM radio (frequency modulation), but not PM radio. 
 
-* widely available,
-* inexpensive,
-* and easy to use
+In classical analog phase modulation, information is encoded in the phase of a high frequency, radio frequency (RF) carrier signal using special circuitry.  The encoding process is designed into the circuit, and it happens in continuous time.  
 
-hardware components.  Analog circuitry is still crucial, it just isn't where most of the secret sauce is. 
-
+In modern PSK, the information used to modulate the carrier is synthesized in programs that run on microprocessors.  The programs produce sequences of precisely timed voltage pulses that are converted to an analog signals using widely available, inexpensive, and easy to use hardware components.  Analog circuitry is still crucial, it just isn't where most of the secret sauce is. 
 
 Even though PSK and phase modulation are engineered in different ways, the underlying mathematical principles are the same.  We'll see this in the next few sections.     
 
 ## Phase Modulation to PSK 
 
-If you crack open a communications book, you'll usually see phase modulation described like this
+If you crack open a communications book, you'll probably see phase modulation described like this
 
 $$
 y(t) = \cos(2\pi f t + \phi (t)).
@@ -48,7 +44,7 @@ $$
 
 The problem with the equation is that the waveform we'd like to digitize, $\phi(t)$, and the higher frequency carrier that we'd like to keep as analog, are jumbled together.  We need to find a way to rip them apart.
 
-Fortunately, the only thing we need is high school math!  Do you remember those angle sum formulas from trig or precalculus?  Let's take the angle sum formula for $\cos$:
+Fortunately, you only need some high school math!  Do you remember those angle sum formulas from trig or precalculus?  Let's take the angle sum formula for $\cos$:
 
 $$
 \cos(x+y) = \cos(x)\cos(y) - \sin(x)\sin(y)
@@ -60,7 +56,7 @@ $$
 y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
 $$
 
-I don't like all the parenthesis.  Let's clean it up by substituting $I(t)$ (the in-phase signal) for $\cos (\phi (t))$ and $Q(t)$ (the quadrature signal) for $\sin(\phi (t))$:
+Let's clean it up by substituting $I(t)$ (the in-phase signal) for $\cos (\phi (t))$ and $Q(t)$ (the quadrature signal) for $\sin(\phi (t))$:
 
 $$
 y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
@@ -70,36 +66,33 @@ The substitution converts phase angles to points on the unit circle:
 
 ![](figures/iq-modulation.png)
 
-This is called **I/Q-modulation**, and is the key to understanding how PSK works.  Here's an overview showing one possible architecture:
+This is called **I/Q-modulation**, and is the key to understanding how PSK works.  Here's an overview showing one possible system architecture:
 
 ![](figures/digital-to-analog-conversion.png)
 
-The digital part of the modulator produces two sequences of samples: one for $I$ and one for $Q$.  Each sequence is sent through it's own digital-to-analog converter (DAC) that transforms a sequence of pulses to  continuous, stair-steppy, analog signal.  The jaggedy signals are smoothed out with a pair of analog reconstruction filters.  Finally, the smooth analog signals are frequency translated with a pair of mixers and combined together.  
+The digital part of the modulator produces two pulse sequences: one for $I$ and one for $Q$.  Each sequence is sent through it's own digital-to-analog converter (DAC) that transform pulses to  continuous, stair-steppy, analog signals.  The jaggedy signals are smoothed out with a pair of analog reconstruction filters.  Finally, the smooth analog signals are frequency translated with a pair of mixers and combined together.  
+
 
 The focus of this post is on the first step of this process that produces the digital pulses.
 
 ## QPSK
 
-Besides referencing at the beginning of this post, I haven't mentioned QPSK at all.  
 QPSK, is a specific type of PSK that uses 4 distict phase shifts : $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$. The phase shifts get mapped to 4 points on the unit circle.  Each 
-point is usually called a **symbol** and is represented by 2 bits.  The $XY$ plane containing the symbols is called a **constellation diagram**:
+point is usually called a **symbol** and is represented by 2 bits.  The $XY$ plane with the symbols is called a **constellation diagram**.  Here's an example of a constellation diagram showing one way to map bits to symbols.  
 
 ![](figures/constellation.png)
     
-
 ## Programming Style
 
-Before we get started on the modulator, I want to comment on my programming style. I like my modem simulations to be as simple as possible. No fancy programming-language magic or crazy abstractions allowed. I want to be able to take my simulation code and easily convert it into a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I didn't use a certain language feature, that's why.
+Python is my preferred language for writing simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
 
-## My Preferred Toolchain
+Unlike some numerical-focused scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need to import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the occasional annoyance.
 
-Python is my preferred language for writing modem simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
-
-Unlike some numerical-focused scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need into import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the annoyances.
+I like my modem simulations to be simple. No fancy programming-language magic or crazy abstractions allowed. Ultimately, I want to take my Python simulation and convert it to a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I don't use a certain language feature, that's why.
 
 ## Modulator Simulation
 
-The three packages I rely on to write effective simulations in Python are
+The three packages I rely on most heavily are
 
 1.  `numpy` for efficient arrays and math,
 2.  `matplotlib` for plotting
@@ -116,7 +109,7 @@ import matplotlib.pyplot as plt
 
 ### From byte arrays to complex QPSK symbols
 
-Let's select a payload. In a real system, the payload is the application specific data you want to send to the receiver. It could be sensor data, text messages, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak", which is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+Now we need to select a payload.  A payload is the application specific data you want to send to the receiver. It could be sensor data, text, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak", which is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -145,7 +138,7 @@ for i in range(num_chars):
 
 #### Bits to Symbols
 
-Converting bits to symbols is pretty simple. The first thing we need to do is split the bit array in half. Half the bits will be used for the in-phase signal and the other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even or odd. The even bits become the in-phase bits and the odd bits become the quadrature bits:
+Converting bits to symbols is pretty simple. Start by splitting the bit array in half. Half the bits will be used for the in-phase signal and the other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even or odd. The even bits become the in-phase bits and the odd bits become the quadrature bits:
 
 ``` python
 i_bits = payload_bits[0::2]
@@ -163,9 +156,9 @@ iq_symbols = i_symbols + 1j * q_symbols
 
 ### Pulse Shaping Filter
 
-Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. First thing we need to do is select a suitable pulse-shaping filter. A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter with properties that be tuned to achieve a certain bandwidth.
+Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. This requires a pulse-shaping filter.  A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter that can be tuned to meet the system's bandwidth requirements.  If you don't use a filter, you'll spray energy all over the place.
 
-The first pulse-shaping filter I ever learned about was the **root-raised cosine filter**. My hand-rolled version (shown below), is not the prettiest code I've ever written, but it works.
+The most common pulse-shaping filter is the **root-raised cosine filter**. My hand-rolled, battle tested version (shown below), is not the prettiest code I've ever written, but it works.
 
 ``` python
 def root_raised_cosine(
@@ -203,11 +196,9 @@ def root_raised_cosine(
     return np.array(x)
 ```
 
-The function arguments give you control over the bandwidth of the output baseband waveform. Rather than spend a lot of time explaining this, let's keep moving through the modulator design. I think this is the best way to see how everything fits together.
-
 Okay, let's say we want to communicate at a rate of 1000 symbols per second and interpolate by 16 times. We'll keep `rate_i` at 1 and change `rate_o` to 16.  The ratio of `rate_o` to `rate_i` should equal the amount we want to interpolate by.
 
--   `delay` controls how many symbol periods you want the filter to last. I usually keep this at 5.
+-   `delay` controls how many symbol periods you want the filter to last. I usually keep it set to 5.
 -   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5.  The higher the value, the higher the bandwidth.
 
 Here's how we create the shaping filter for this scenario:
@@ -216,7 +207,7 @@ Here's how we create the shaping filter for this scenario:
 shaping_filter = root_raised_cosine(rate_o=16, rate_i=1, beta=0.5, delay=5)
 ```
 
-and here's what the filter looks like as a function of symbol period. This is also called the filter's **impulse response**. There are 10 symbol periods because `delay` is set to 5. If `delay` was set to 23, it would span 46 symbol periods.
+and here's what the filter looks like as a function of symbol period. This is also called the filter's **impulse response**. There are 10 symbol periods because `delay` is set to 5.  The number of symbol periods is always twice the `delay`.
 
 ``` python
 plt.figure(1)
@@ -231,15 +222,11 @@ plt.grid()
 {{< figure src="index_files/figure-markdown_strict/cell-9-output-1.png">}}
 <img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
 
-In case you like formulas, here's the rule governing the number of samples in the root-raised cosine filter:
-
-$$
-\text{number coefficients } = 1 + \frac{\text{ rate_o }}{\text{ rate_i }} \times \text{ delay } \times 2
-$$
 
 ### Interpolation Process
 
-The next step in the process is to interpolate the symbols with the filter. There's an inefficient, easy way, to do this and an efficient, more complex way to do this. Let's start with the easy way.
+Now that we have the pulse-shaping filter, it's time to use it to interpolate the symbols. 
+There's an inefficient, easy way, to do this and an efficient, more complex way to do this. Let's start with the easy way.
 
 #### Straight Convolution - The Easy Way
 
@@ -253,7 +240,7 @@ iq_symbols_upsampled[::16] = iq_symbols
 baseband_waveform = np.convolve(iq_symbols_upsampled, shaping_filter)
 ```
 
-If you're not familiar with convolution, you can think of it as a walking multiply and accumulator. The filter walks across the input one sample at a time, point-wise multiplies the filter coefficients with a segment of the filter input input coefficients, and adds the results.
+Think of convolution as a walking multiply and accumulator. The filter walks across the input one sample at a time, point-wise multiplies the filter coefficients with a segment of the filter input input coefficients, and adds the results.
 
 To plot the output with respect to time, we need to calculate the number of samples per second (aka sample rate) with a unit conversion:
 $$ 
@@ -268,7 +255,7 @@ symbols_per_second = 1000
 samples_per_second = samples_per_symbol * symbols_per_second
 ```
 
-Now let's plot the waveform.
+Here's what the final baseband waveform looks like:
 
 ``` python
 num_baseband_samples = len(baseband_waveform)
@@ -282,21 +269,21 @@ plt.legend()
 {{< figure src="index_files/figure-markdown_strict/cell-12-output-1.png" >}}
 <img src="index_files/figure-markdown_strict/cell-12-output-1.png"/>
 
-Can you spot the inefficieny? Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
+Remember how I said this was inefficient?  Can you see why?  Upsampling distributes the samples over a large array full of zeros. Unfortunately, the convolution function doesn't know anything about this. It's going to do what it normally does (which is multiply and accumulate), even if most of the entries are 0. This is a huge waste of time and energy. If we know for a fact that an element in an array is 0, we should just skip over it.
 
 #### Multirate Signal Processing - The Hard Way
 
-This brings us to the harder, but more efficient way of doing this based on **multirate signal processing**. There's no way I can explain everything about multirate signal processing in one blog article. It's an entire area of specialization. What I can do is give some motivation, and code to demonstrate the process.  If you're interested in learning more about it, here's a list of some authoritative books:
+This brings us to the harder, but more efficient way of doing the interpolation.   It's based on an important signal processing technique called **multirate signal processing**. There's no way to do this justice in one blog post. Instead, I'll give some motivation and some code to demonstrate the process.  If you're interested in learning more about it, here's a list of some authoritative books:
 
 * [Multirate Signal Processing for Communications Systems - Fredric J Harris](https://www.amazon.com/Multirate-Processing-Communication-Systems-Publishers/dp/877022210X/ref=asc_df_877022210X/?tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1&mcid=08126222a4593f0dac4cbeedbdc04b2d&tag=hyprod-20&linkCode=df0&hvadid=693296405172&hvpos=&hvnetw=g&hvrand=4559866533785259274&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9192171&hvtargid=pla-1161835612443&psc=1 "target=_blank")
 * Multirate Signal Processing - Ronald Crochiere and Lawrence Rabiner
 * Multirate Systems and Filter Banks - P.P Vaidyanathan
 * Wavelets and Filter Banks - Gilbert Strang and Truong Nguyen
 
-Mulirate signal processing is all about restructuring the workload to improve
+Mulirate signal processing is all about restructuring a workload to improve
 computational efficiency. On a powerful processor, this might not matter. But if you're system needs to run in real-time, on resource constrained hardware, processing overhead becomes a concern.
 
-To apply multirate signal processing to the pulse shaping task, we start by transforming the 161 element, single dimensional array into a two-dimensional *filter bank* consisting of 16 rows and 11 columns. Yes, the number of rows must match the number of samples per symbol.
+To apply multirate signal processing to our pulse-shaping task, transform the 161 element, single dimensional array into a two-dimensional *filter bank* consisting of 16 rows and 11 columns. Yes, the number of rows must match the number of samples per symbol.
 
 ``` python
 filter_bank = np.reshape(
@@ -306,7 +293,7 @@ filter_bank = np.reshape(
 )
 ```
 
-Tacking on 15 zeros at the end of the shaping filter makes the reshaping workout.The filter bank is applied to the input using a custom algorithm. No upsampling required.
+Tacking on 15 zeros at the end of the shaping filter makes the reshaping workout.  The filter bank is applied to the input using a custom algorithm. No upsampling required.
 
 ``` python
 iq_symbols_1 = np.concatenate((iq_symbols, np.zeros(16)))
@@ -355,11 +342,11 @@ plt.legend()
 {{< figure src="index_files/figure-markdown_strict/cell-15-output-1.png" width="675" height="429" >}}
 <img src="index_files/figure-markdown_strict/cell-15-output-1.png"/>
 
-Besides being slightly different lengths, the easy and hard ways give exactly the same results.
+Besides having a few more samples, the results are exactly the same.
 
-### Validation
+### Modulation Validation
 
-A great question to ask at this point is
+At this point, it's worth asking 
 
 > "yeah, but how do you know this is correct?"
 
