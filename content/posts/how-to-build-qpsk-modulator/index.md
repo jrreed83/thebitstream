@@ -11,28 +11,32 @@ format: hugo
 math: true
 ---
 
-In this post, we're going to start developing a digital modulator based on **Quadrature Phase Shift Keying**, or QPSK for short.  For context, we'll start with a little history, and a little math. After that, we'll start getting into the nuts-and-bolts of how it all works.
+In this post, we're going to start developing a digital modulator based on **Quadrature Phase Shift Keying**, or QPSK for short.  For context, we'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.
 
 ## Some Background 
 
 Before transistors, everything in communications was analog.  Modems were built by slide-rule wielding engineers with an almost magical ability to control voltages and currents on complicated circuit boards.     
 
-The proliferation of integrated circuits in the 1950's and 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new
-digital paradigm to improve their existing product line, or maybe invent something completely new.          
+The proliferation of integrated circuits in the 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new digital paradigm to improve their existing product line, or maybe invent something completely new.          
 
-Digital **Phase Shift Keying** (PSK) came from looking at analog phase modulation systems with a fresh set of eyes.  
+**Phase Shift Keying** (PSK) is a great example.  PSK is very popular digital modulation technique based on "digitizing" analog phase modulation.  Good phase modulation systems are difficult to design, which is probably why you've heard of AM radio (amplitude modulation), FM radio (frequency modulation), but not PM radio. 
 
-In classic analog phase modulation, information is encoded in the phase of a high frequency carrier signal using specially designed circuits.  
+In classic analog phase modulation, information is encoded in the phase of a high frequency carrier signal using special circuitry.  The encoding process is designed into the circuit, and it happens in continuous time.  
 
-Modern PSK technology is very different.  Most of the modem design work involves writing programs and algorithms that produce sequences of discrete-time digitial samples.  While this tends to result in less power-efficient systems, you get the benefit of improved precision and flexibility.  
+In modern PSK, the information used to modulate the carrier is synthesized in a seperate digital process built by programming integrated circuits.  This process generates a sequence of digital, discrete time pulses that are ultimately converted to an analog waveform using
 
-Converting digital samples to a well-behaved analog signal is almost an after thought.  Digital-to-analog conversion hardware is widely available, cheap, and pretty easy to use.  These days, it's possible to be communications engineer without knowing anything about circuit design or electronics.  I'm not advocating for this, it's just reality.
+* widely available,
+* inexpensive,
+* and easy to use
 
-Even though PSK and phase modulation are engineered in different ways, the mathematical principles that they operate by are the same.     
+hardware components.  Analog circuitry is still crucial, it just isn't where most of the secret sauce is. 
+
+
+Even though PSK and phase modulation are engineered in different ways, the underlying mathematical principles are the same.  We'll see this in the next few sections.     
 
 ## Phase Modulation to PSK 
 
-If you crack open a communications book, you'll usually see phase modulation described mathematically like this
+If you crack open a communications book, you'll usually see phase modulation described like this
 
 $$
 y(t) = \cos(2\pi f t + \phi (t)).
@@ -56,24 +60,32 @@ $$
 y(t) = \cos (\phi (t))  \cos(2\pi f t) - \sin(\phi (t)) \sin(2\pi f t)
 $$
 
-I don't like all the parenthesis.  Let's clean it up by substituting $I(t)$ for $\cos (\phi (t))$ and
-$Q(t)$ for $\sin(\phi (t))$:
+I don't like all the parenthesis.  Let's clean it up by substituting $I(t)$ (the in-phase signal) for $\cos (\phi (t))$ and $Q(t)$ (the quadrature signal) for $\sin(\phi (t))$:
 
 $$
 y(t) = I(t)  \cos(2\pi f t) - Q(t) \sin(2\pi f t)
 $$
 
-This is called **I/Q-modulation**.  
+The substitution converts phase angles to points on the unit circle:
 
+![](figures/iq-modulation.png)
+
+This is called **I/Q-modulation**, and is the key to understanding how PSK works.  Here's an overview showing one possible architecture:
+
+![](figures/digital-to-analog-conversion.png)
+
+The digital part of the modulator produces two sequences of samples: one for $I$ and one for $Q$.  Each sequence is sent through it's own digital-to-analog converter (DAC) that transforms a sequence of pulses to  continuous, stair-steppy, analog signal.  The jaggedy signals are smoothed out with a pair of analog reconstruction filters.  Finally, the smooth analog signals are frequency translated with a pair of mixers and combined together.  
+
+The focus of this post is on the first step of this process that produces the digital pulses.
 
 ## QPSK
 
 Besides referencing at the beginning of this post, I haven't mentioned QPSK at all.  
-Quadrature Phase Shift Keying, or QPSK, is a form of PSK that uses 4 phase shifts: $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$.  Each phase shift is called a **symbol**, and  represented by 2 bits.        
+QPSK, is a specific type of PSK that uses 4 distict phase shifts : $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$. The phase shifts get mapped to 4 points on the unit circle.  Each 
+point is usually called a **symbol** and is represented by 2 bits.  The $XY$ plane containing the symbols is called a **constellation diagram**:
 
 ![](figures/constellation.png)
-
-
+    
 
 ## Programming Style
 
