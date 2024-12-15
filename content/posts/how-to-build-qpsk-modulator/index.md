@@ -66,22 +66,24 @@ The substitution converts phase angles to points on the unit circle:
 
 ![](figures/iq-modulation.png)
 
-This is called **I/Q-modulation**, and is the key to understanding how PSK works.  Here's an overview showing one possible system architecture:
+This is called **I/Q-modulation**, and is the key to understanding how PSK works.  Here's an overview showing one possible architecture:
 
 ![](figures/digital-to-analog-conversion.png)
 
-The digital part of the modulator produces two pulse sequences: one for $I$ and one for $Q$.  Each sequence is sent through it's own digital-to-analog converter (DAC) that transform pulses to  continuous, stair-steppy, analog signals.  The jaggedy signals are smoothed out with a pair of analog reconstruction filters.  Finally, the smooth analog signals are frequency translated with a pair of mixers and combined together.  
+The digital part of the modulator produces two pulse sequences: one for $I$ and one for $Q$.  Together, the I/Q pulse pairs are called **symbols**.  Each sequence is sent through two digital-to-analog converters (DAC) that transform pulses to continuous, non-smooth, analog signals.  These jaggedy signals are smoothed out with a pair of analog reconstruction filters.  Finally, the smooth analog signals are frequency translated to a higher RF frequency with a pair of mixers, and combined together.  
 
-
-The focus of this post is on the first step of this process that produces the digital pulses.
+All the information is in the symbols.  This means that the speed that the symbols are getting written to the DACs is the speed of communication.  The higher the speed, the more bandwidth your final signal will occupy.
 
 ## QPSK
 
 QPSK, is a specific type of PSK that uses 4 distict phase shifts : $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$. The phase shifts get mapped to 4 points on the unit circle.  Each 
-point is usually called a **symbol** and is represented by 2 bits.  The $XY$ plane with the symbols is called a **constellation diagram**.  Here's an example of a constellation diagram showing one way to map bits to symbols.  
+point is usually called a **symbol** and is represented by 2 bits.  
+
+The $XY$ plane with the plotten symbols forms the **constellation diagram**.  Here's an example of a constellation diagram showing one way to map bits to symbols.  
 
 ![](figures/constellation.png)
-    
+
+
 ## Programming Style
 
 Python is my preferred language for writing simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
@@ -145,7 +147,7 @@ i_bits = payload_bits[0::2]
 q_bits = payload_bits[1::2]
 ```
 
-Next, take a  bit from each array, and map the bit pair to a point in the `XY`-plane. Here's one way to do this that takes advantage of `numpy`'s vectorization capabilities.
+Next, take a  bit from each array, and map the bit pair to a point in the $XY$ plane. Here's one way to do this that takes advantage of `numpy`'s vectorization capabilities.
 
 ``` python
 i_symbols = 2 * i_bits - 1
@@ -156,7 +158,7 @@ iq_symbols = i_symbols + 1j * q_symbols
 
 ### Pulse Shaping Filter
 
-Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. This requires a pulse-shaping filter.  A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter that can be tuned to meet the system's bandwidth requirements.  If you don't use a filter, you'll spray energy all over the place.
+Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. This requires a pulse-shaping filter.  A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter that smooths out the symbol pulses.  Selecting the wrong filter, or none at all, will likely result in your system radiating way too much energy in frequency bands you don't expect.  Worse case, nearby electronic devices could go on the fritz and fail.  You always want to constrain your bandwidth.  Effective filtering helps do this.  
 
 The most common pulse-shaping filter is the **root-raised cosine filter**. My hand-rolled, battle tested version (shown below), is not the prettiest code I've ever written, but it works.
 
@@ -224,7 +226,7 @@ plt.grid()
 
 ### Interpolation Strategies 
 
-Now that we have the pulse-shaping filter, it's time to use it to interpolate the symbols. 
+Now that we have the pulse-shaping filter, it's time to use it to smoothly interpolate the symbols. 
 There's an inefficient, easy way, to do this and an efficient, more complex way to do this. Let's start with the easy way.
 
 #### Straight Convolution - The Easy Way
