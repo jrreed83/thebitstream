@@ -9,12 +9,12 @@ tags:
 jupyter: python3
 format: hugo
 math: true
+ShowToc: true
 ---
 
-In this post, we're going to go through the early stages of building a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is one of the most critical pieces of a communucation system.  It's the device responsible for taking the data you want to transmit, and using it to modify a characteristic of a high carrier frequency signal.  Usually the phase, frequency, or amplitude.  Without modulators, world-wide communication would not be possible!   
+In this post, we're going to go through the early stages of building a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is one of the most critical pieces of a communucation system.  It's the device responsible for taking the data you want to transmit, and using it to modify a characteristic of a high carrier frequency signal.  Usually the phase, frequency, or amplitude.  Without modulators, the ease and reliability of long distance communications would be impossible.   
 
-We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  The code I'll present and explain later on is the same type of code I write when building production-quality systems. 
-
+We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  The code I'll present and explain later on is the same type of code I write in actual design simulations.
 
 ## Background and Motivation
 
@@ -30,7 +30,7 @@ In modern PSK, the information used to modulate the carrier is synthesized in pr
 
 Even though PSK and phase modulation are engineered in different ways, the underlying mathematical principles are the same.  We'll see this in the next few sections.     
 
-## Phase Modulation to PSK 
+## Phase Shift Keying and I/Q Modulation
 
 If you crack open a communications book, you'll probably see phase modulation described like this
 
@@ -222,8 +222,7 @@ plt.grid()
 {{< figure src="index_files/figure-markdown_strict/cell-9-output-1.png">}}
 <img src="index_files/figure-markdown_strict/cell-9-output-1.png" width="679" height="434" />
 
-
-### Interpolation Process
+### Interpolation Strategies 
 
 Now that we have the pulse-shaping filter, it's time to use it to interpolate the symbols. 
 There's an inefficient, easy way, to do this and an efficient, more complex way to do this. Let's start with the easy way.
