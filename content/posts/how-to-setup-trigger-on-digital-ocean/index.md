@@ -1,23 +1,32 @@
 ---
-title: How to setup a simple AI automation with Trigger.dev
+title: How to setup a simple automation with Trigger.dev
 author: Joey Reed
-date: 2024-12-09
+date: 2024-12-15
 draft: true
-summary:   
+summary:    
 tags: ["automation"]
+ShowToc: true
 ---
 
-A few months ago I started looking into freelancers and small businesses use generative AI tools to speed up the content generation process.  
-
-The most popular low-code platforms for this sort of thing are
+A few months ago I started investigating how small businesses use generative AI to help with content generation, marketing, and business development.  One piece of technology that's used consistently are no-code (or low-code) platforms.  The top-three (in no particular order) most popular are 
 
 * [make.com](https://www.make.com/en)
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
 
-## My Simple Make.com Automation
 
-## Adapting it to Trigger.dev
+
+## My First Make.com Automation
+
+
+![My First Automation](./figures/make_automation.png)
+
+
+ 
+
+### Remix Project
+
+
 
 
 
