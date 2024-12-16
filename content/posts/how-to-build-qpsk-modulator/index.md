@@ -12,9 +12,9 @@ math: true
 ShowToc: true
 ---
 
-In this post, we're going to go through the early stages of building a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is one of the most critical pieces of a communucation system.  It's the device responsible for taking the data you want to transmit, and using it to modify a characteristic of a high carrier frequency signal.  Usually the phase, frequency, or amplitude.  Without modulators, the ease and reliability of long distance communications would be impossible.   
+In this post, we're going to implement the first few stages of a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is a critical piece of any communication system.  It's the device that converts data into a physical shift of a high frequency carrier frequency signal.  The carrier signal "carries" the modulated signal through the air to a receiver, where this shift is detected and converted back to data.   Without modulators, reliable, long distance communication would be impossible.
 
-We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  The code I'll present and explain later on is the same type of code I write in actual design simulations.
+We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  
 
 ## Background and Motivation
 
