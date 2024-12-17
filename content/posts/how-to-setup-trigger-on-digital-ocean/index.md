@@ -8,10 +8,11 @@ tags: ["automation"]
 ShowToc: true
 ---
 
+Working at a small company is great, but I don't get much time to develop effective marketing strategies.
 
-A few months ago I started investigating how small businesses use generative AI for content generation, marketing, and business development.  One topic that kept coming up were "no-code" automation tools.  I had never heard of this before.  They give non-programmers the power to conveniently build powerful software systems by combining popular APIs, services, and tools together in a simple drag-and-drop interface.  
+I keep reading about how generative AI is transforming the business landscape.  So a few months ago I started investigating how small businesses use this technology to help day-to-day business operations.  
 
-I like to program, but I have very little time to work on this type of software.  So I decided to give these tools a try.         
+One topic that kept coming up were "no-code" automation tools.  I had never heard of this before.  They give non-programmers the power to conveniently build powerful software systems by combining popular APIs, services, and tools together in a simple drag-and-drop interface.  
 
 The 3 most popular no-code platforms on the market today are  
 
@@ -19,20 +20,17 @@ The 3 most popular no-code platforms on the market today are
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
 
-
-
-## My First Make.com Automation
-
-For my first Make.com scenario, I built a simple system to help create and manage a series of articles describing previous projects I've worked on.  All the content is stored in a single Google Sheet on Google Drive.              
-
-![My First Automation](./figures/make_automation.png)
-
+So far, I've used make.com to build out a simple content management/generation system with Google Sheets and the OpenAI API.  Overall, the process was pretty easy.  But I like to program, so I looked around for some alternatives.          
 
 ##  Trigger.dev
+
+[Trigger.dev](https://trigger.dev/) is a newer automation tool 
 
 ### Triggers in Google Sheets
 
 ### Digital Ocean
+
+
 
 
 

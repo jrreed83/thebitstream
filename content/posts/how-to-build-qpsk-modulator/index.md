@@ -12,7 +12,7 @@ math: true
 ShowToc: true
 ---
 
-In this post, we're going to implement the first few stages of a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is a critical piece of any communication system.  It's the device that converts data into a physical shift of a high frequency carrier frequency signal.  The carrier signal "carries" the modulated signal through the air to a receiver, where this shift is detected and converted back to data.   Without modulators, reliable, long distance communication would be impossible.
+In this post, we're going to implement the first few stages of a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is a critical piece of any communication system.  It's the device that converts information into a physical effect that can travel through space.  Usually this means carefully tuning the characteristics of a high frequency carrier signal.  The carrier signal "carries" the modulated signal through the air to a receiver, where the physical property is detected and converted back to data.  Without modulators, reliable, long distance communication would be impossible.
 
 We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  
 
