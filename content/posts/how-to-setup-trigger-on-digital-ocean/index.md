@@ -98,3 +98,5 @@ To run the post request asynchronously, add special parameter to post request ..
 ```js 
 const obj = UrlFetchApp.fetch(`${api_end_point}?blocking=false`, options);
 ```
+
+What connects a deployment to an application in trigger?
