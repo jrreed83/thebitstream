@@ -1,4 +1,5 @@
 # Generated files by hugo
+*.txt
 /public/
 /resources/_gen/
 /assets/jsconfig.json

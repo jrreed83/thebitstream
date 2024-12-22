@@ -12,21 +12,21 @@ math: true
 ShowToc: true
 ---
 
-In this post, we're going to implement the first few stages of a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is a critical piece of any communication system.  It's the device that converts information into a physical effect that can travel through space.  Usually this means carefully tuning the characteristics of a high frequency carrier signal.  The carrier signal "carries" the modulated signal through the air to a receiver, where the physical property is detected and converted back to data.  Without modulators, reliable, long distance communication would be impossible.
+In this post, we're going to implement the first few stages of a digital **Quadrature Phase Shift Keying** (QPSK) modulator.  A modulator is a critical component of any communication system.  It's the device that converts information into a physical effect that can travel through space.  Usually this means carefully tuning the characteristics of a high frequency carrier signal.  The carrier signal "carries" the modulated signal through the air to a receiver, where the physical property is detected and converted back to data.  Without modulators, reliable, long distance communication would be impossible.
 
 We'll start with a little history, and a little math. After that, we'll get into the nuts-and-bolts of how it all works.  
 
 ## Background and Motivation
 
-Before transistors, communications was depended on analog technology.  Modems were built by slide-rule wielding engineers with a magical ability to control voltages and currents on complicated circuit boards.     
+Before transistors, communications was built on analog technology.  Modems were designed by slide-rule wielding engineers with a magical ability to control voltages and currents on complicated circuit boards.     
 
 The proliferation of integrated circuits in the 1960's shook up the electronics industry.  Engineers started thinking about how they could take advantage of this new digital paradigm to improve existing product , or maybe invent something completely new.          
 
-**Phase Shift Keying** (PSK) is a great example of this change in mindset.  PSK is very popular digital modulation technique based on "digitizing" analog phase modulation.  Good phase modulation systems are difficult to design and are not common.  This is probably why you've heard of AM radio (amplitude modulation), FM radio (frequency modulation), but not PM radio. 
+**Phase Shift Keying** (PSK) is a great example of this evolving mindset.  PSK is a very popular digital modulation technique based on "digitizing" analog phase modulation.  Good phase modulation systems are difficult to design and are not common.  This is probably why you've heard of AM radio (amplitude modulation), FM radio (frequency modulation), but not PM radio. 
 
 In classical analog phase modulation, information is encoded in the phase of a high frequency, radio frequency (RF) carrier signal using special circuitry.  The encoding process is designed into the circuit, and it happens in continuous time.  
 
-In modern PSK, the information used to modulate the carrier is synthesized in programs that run on microprocessors.  The programs produce sequences of precisely timed voltage pulses that are converted to an analog signals using widely available, inexpensive, and easy to use hardware components.  Analog circuitry is still crucial, it just isn't where most of the secret sauce is. 
+In modern PSK, the information that modulates the carrier is synthesized in programs running on microprocessors.  The programs produce sequences of precisely timed voltage pulses that are converted to analog signals using widely available, inexpensive, and easy to use hardware components.  Analog circuitry is still crucial, it just isn't where most of the secret sauce is. 
 
 Even though PSK and phase modulation are engineered in different ways, the underlying mathematical principles are the same.  We'll see this in the next few sections.     
 
@@ -72,23 +72,22 @@ This is called **I/Q-modulation**, and is the key to understanding how PSK works
 
 The digital part of the modulator produces two pulse sequences: one for $I$ and one for $Q$.  Together, the I/Q pulse pairs are called **symbols**.  Each sequence is sent through two digital-to-analog converters (DAC) that transform pulses to continuous, non-smooth, analog signals.  These jaggedy signals are smoothed out with a pair of analog reconstruction filters.  Finally, the smooth analog signals are frequency translated to a higher RF frequency with a pair of mixers, and combined together.  
 
-All the information is in the symbols.  This means that the speed that the symbols are getting written to the DACs is the speed of communication.  The higher the speed, the more bandwidth your final signal will occupy.
+The information is in the symbols, and the speed the symbols are written to the DACs is the speed of communication.  The higher the speed, the more bandwidth your signal will take up.
 
 ## QPSK
 
-QPSK, is a specific type of PSK that uses 4 distict phase shifts : $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$. The phase shifts get mapped to 4 points on the unit circle.  Each 
-point is usually called a **symbol** and is represented by 2 bits.  
+QPSK, is a specific type of PSK that uses 4 distict phase shifts : $45^\circ$, $135^\circ$, $225^\circ$, and $315^\circ$. The phase shifts get mapped to 4 points on the unit circle.  Each point is usually called a **symbol** and is represented by 2 bits.  
 
-The $XY$ plane with the plotten symbols forms the **constellation diagram**.  Here's an example of a constellation diagram showing one way to map bits to symbols.  
+The $XY$ plane with the plotted symbols forms the **constellation diagram**.  Here's an example of a constellation diagram showing one way to map bits to symbols.  
 
 ![](figures/constellation.png)
 
 
 ## Programming Style
 
-Python is my preferred language for writing simulations. It's simple, has decent performance as long as you use the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
+Python is my preferred language for writing simulations. It's simple, has decent performance with the right libraries, and doesn't require a lot of ceremony. You can just open up a text file and hack away.
 
-Unlike some numerical-focused scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need to import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the occasional annoyance.
+Unlike some numerical scripting languages I've used before (like Matlab or Julia), efficient arrays aren't built in. You need to import them through third-party libraries. This leads to some clunky syntax, but you get used to it. In my opinion, the benefits of using Python outweigh the occasional annoyance.
 
 I like my modem simulations to be simple. No fancy programming-language magic or crazy abstractions allowed. Ultimately, I want to take my Python simulation and convert it to a hardware description language (Verilog/System Verilog) or low-level programming language (C), without thinking too hard. So if you look at my code and wonder why I don't use a certain language feature, that's why.
 
@@ -111,7 +110,12 @@ import matplotlib.pyplot as plt
 
 ### From byte arrays to complex QPSK symbols
 
-Now we need to select a payload.  A payload is the application specific data you want to send to the receiver. It could be sensor data, text, pretty much anything. Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak", which is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
+Now we need to select a payload.  A payload is the application specific information you want to send to the receiver. It could be sensor data, text, pretty much anything.  Usually, the payload is one piece of a larger **packet** structure, designed to help the receiver figure out what the payload is.  The particulars 
+of a packet structure depend on design requirements, but what a typical structure might look like:  
+
+![Packet structure](./figures/packet-structure.png)
+
+Unless I have a compelling reason not to, I like my simulated payloads to be English phrases. It makes debugging easier. I'm a big fan of using "hex-speak", which is a little language built by expressing unsigned integers in hexadecimal. Most of them are pretty funny, and just lighten the mood. Here are a few of my favorites: `0xDEADBEEF`, `0xFEEDBABE`, `0xDECAFBAD`, `0xBADF00D`. Let's combine them into one big hex-speak phrase and partition them into bytes:
 
 ``` python
 payload = [
@@ -124,7 +128,7 @@ payload = [
 
 #### Bytes to Bits
 
-Now that we have the payload, we can start progressively moving toward building the symbols. First, we need to convert the byte array to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them all together. There are several ways to do this in Python. Here's the version that most closely follows what you might do in a language like C.
+Now that we have the payload, we can start progressively moving toward building the symbols. First, the byte array is converted to a bit array. This boils down to extracting the 8 bits from each byte, and concatenating them. There are several ways to do this in Python. Here's the version that most closely follows what you might do in a language like C.
 
 ``` python
 num_chars = len(payload)
@@ -140,7 +144,7 @@ for i in range(num_chars):
 
 #### Bits to Symbols
 
-Converting bits to symbols is pretty simple. Start by splitting the bit array in half. Half the bits will be used for the in-phase signal and the other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even or odd. The even bits become the in-phase bits and the odd bits become the quadrature bits:
+Converting bits to symbols is also simple. Start by splitting the bit array in half. Half the bits will be used for the in-phase signal and the other half will be used for the quadrature signal. As long as you use the same splitting method in the receiver, you can do this however you want. I always split the bits based on whether the bit index is even. The even bits become the in-phase bits and the odd bits become the quadrature bits:
 
 ``` python
 i_bits = payload_bits[0::2]
@@ -158,9 +162,11 @@ iq_symbols = i_symbols + 1j * q_symbols
 
 ### Pulse Shaping Filter
 
-Now that we've converted the payload to an array of symbols, it's time to start building the baseband waveform. This requires a pulse-shaping filter.  A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter that smooths out the symbol pulses.  Selecting the wrong filter, or none at all, will likely result in your system radiating way too much energy in frequency bands you don't expect.  Worse case, nearby electronic devices could go on the fritz and fail.  You always want to constrain your bandwidth.  Effective filtering helps do this.  
+Now that we've converted the payload to an array of symbols, it's time to build the baseband waveform. This requires a pulse-shaping filter.  A pulse shaping filter is a special type of digital **finite inpulse response** (FIR) filter that creates a smoother waveform by interpolating between the symbols.     
 
-The most common pulse-shaping filter is the **root-raised cosine filter**. My hand-rolled, battle tested version (shown below), is not the prettiest code I've ever written, but it works.
+Selecting the wrong filter, or none at all, will likely result in your system radiating way too much energy in frequency bands you don't expect.  Worse case, nearby electronic devices could go on the fritz and fail.  You always want to constrain your bandwidth.  Effective filtering helps do this.  
+
+The most common pulse-shaping filter is the **root-raised cosine filter**. My hand-rolled, battle tested version (shown below), is not the prettiest code I've ever written, but it works.  The input arguments give control over how much interpolation needs to happen.
 
 ``` python
 def root_raised_cosine(
@@ -197,18 +203,16 @@ def root_raised_cosine(
 
     return np.array(x)
 ```
-
-Okay, let's say we want to communicate at a rate of 1000 symbols per second and interpolate by 16 times. We'll keep `rate_i` at 1 and change `rate_o` to 16.  The ratio of `rate_o` to `rate_i` should equal the amount we want to interpolate by.
+How do we use `root_raised_cosine`?  The first thing to know about this function is that the ratio of `rate_o` to `rate_i` is equal to the amount of interpolation we want to apply.  This means that if we want to interpolate by a factor of 16, we can set `rate_i` at 1 and change `rate_o` to 16.  Here are a few other rules of thumb:
 
 -   `delay` controls how many symbol periods you want the filter to last. I usually keep it set to 5.
 -   `beta` gives you fine-grained control of the bandwidth of the signal. In my experience, this is usually set to 0.25 or 0.5.  The higher the value, the higher the bandwidth.
 
-Here's how we create the shaping filter for this scenario:
+Here's how you execute the function:
 
 ``` python
 shaping_filter = root_raised_cosine(rate_o=16, rate_i=1, beta=0.5, delay=5)
 ```
-
 and here's what the filter looks like as a function of symbol period. This is also called the filter's **impulse response**. There are 10 symbol periods because `delay` is set to 5.  The number of symbol periods is always twice the `delay`.
 
 ``` python
