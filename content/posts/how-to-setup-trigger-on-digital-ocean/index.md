@@ -8,12 +8,14 @@ tags: ["automation"]
 ShowToc: true
 ---
 
-How can small businesses use modern technology to balance getting work done with lining up new work?  I started investigating this 
-question a couple months ago and learned a lot in the process.  The common themes were leveraging generative AI (no surprise) and no-code
-automation tools.  I had never heard of no-code automation tools before, so I did a little more digging. 
+How do small businesses use modern technology to balance getting work done with lining up new work?  I started investigating this 
+question a couple months ago and learned a lot about business development and marketing.  The common themes were leveraging 
+generative AI (no surprise) and no-code automation tools.  I had never heard of no-code automation tools before, so I did a 
+little more digging. 
 
-## No-Code Automation Tools
-No-code automation tools let you build software systems by graphically combining third-party APIs without any programing.  Obviously this is great for someone with a product idea, but can't build it themselves and can't justify paying a developer.  The tool replaces the developer.  
+## What is a No-Code Automation Tool
+
+No-code automation tools let you build software systems by graphically combining third-party APIs without any programing.  Obviously this is great for someone with a product idea but doesn't have the development experience to build it.    
 
 The 3 most popular no-code platforms on the market today are  
 
@@ -21,7 +23,7 @@ The 3 most popular no-code platforms on the market today are
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
 
-So far, I've used make.com to build out a simple experimental system that uses generative AI (OpenAI models for now) to convert existing content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.  Here's what my make.com "scenario" looks like
+So far, I've used make.com to build out a simple experimental system that uses generative AI (OpenAI models for now) to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.  Here's what my make.com "scenario" looks like
 
 ![Make.com automation](./figures/make_automation.png)
 
@@ -32,17 +34,29 @@ than navigate a user interface that does magical things in the background.
 
 ## Introduction to Trigger.dev 
 
-I was going to try n8n out because it's supposedly geared toward programmers, but then I came across [trigger.dev](https://trigger.dev/).  Trigger.dev is definitely not a no-code platform.  Instead of dragging, dropping, and connecting blocks on a canvas, workflows are build by writing typescript (or javascript).  You're responsible for bringing any npm packages you need, including the ones that help communicate with RESTful services like OpenAI. 
+I was going to try n8n out because it's supposedly geared toward programmers, but then I came across [trigger.dev](https://trigger.dev/).  Trigger.dev is definitely not a no-code platform.  Instead of dragging, dropping, and connecting blocks on a canvas, workflows are built in typescript (or javascript).  You're responsible for bringing any third-party packages you need, including API libraries. 
 
 
 ## What we're going to Build
 
 We're going to build a prototype system that can help teachers provide career advice to students based on information entered into
-a Google Sheet.  Here's a diagram that shows the overall architecture
+a Google Sheet. 
+
+![spreadsheet](./figures/spreadsheet.png)
+
+To start, you put in some basic information about the student in an open row.  Right now, you just need to put in 
+the student's name, age, and interests.  When you're ready to get career advice for the student, just change the Trigger dropdown from
+"Waiting" to "Carrers".  A few seconds later, you'll get the career advice.
+
+I'm not claiming this is ready for production ready or anything.  It can be elaborated and definitely spruced up.  My main objective was to figure out how to wrangle all the tools and APIs.
+
+### System Architecture
 
 ![carrer-advice-workflow](./figures/career-advice-flow.png)
 
-and here's the technology we'll use to build it:
+If we used make.com for this, we'd only need make.com, some API keys, and the "Make for Google Sheets" extension available from Google Sheets.
+Trigger.dev only handles the long-running task part of the workflow.  If we want to interact with Google Sheets, we need to figure out
+how to do it ourselves.  Here's a list of the different pieces of technology I ended up brining in to the project:
 
 * Google Sheets
 * Google Apps Script
@@ -51,10 +65,9 @@ and here's the technology we'll use to build it:
 * OpenAI API
 * Google Sheets API 
   
-The teacher using the system doesn't have to worry about any of the technical details.  They'll
-be completely invisible.  
+The teacher using the system doesn't have to worry about any of the technical details.  They'll be completely invisible.  
 
-You can find the project on Github.
+All the code is on GitHub.
 
 ## Digital Ocean Functions
 
@@ -144,17 +157,18 @@ doctl serverless init --language js doctl-trigger-dot-dev-with-google
 
 ### 3. Deploy
 
-Digital Ocean won't know about the project we just had doctl create until it's deployed to their servers.  To deploy,
+Digital Ocean won't know about the project doctl created until it's deployed to their servers.  To deploy,
 run the following command:
 
 ```sh
  doctl serverless deploy doctl-trigger-dot-dev-with-google/
 ```
-The message returned by doctl will tell you whether or not the deployment succeeded.  
+
+The message doctl returns will tell you whether or not the deployment succeeded.  
 
 ### 4. Test
 
-We can execute the function through doctl, cURL, or the Digital Ocean control panel.  Here's how you'd execute
+The function can be invoked through doctl, cURL, or the Digital Ocean control panel.  Here's how you'd execute
 the function through doctl.
 
 ```sh
@@ -169,18 +183,19 @@ You should get a response that looks like this
 }
 ```
 
-The `invoke` subcommand lets you pass in data to the function. This will be extremely helpful later on.  To see the full list of options,
-ask for help in doctl:
+If you take a look at the source code, this response will make sense.
+
+
+You can pass parameters into the function too, which will be helpful later.  To see the full list of options just ask doctl for help
 
 ```sh
 doctl serverless functions invoke --help
 ```
-
-Even if you don't want to test through the control panel, I'd still recommend visiting it.  It has some useful 
-information about your function including specific cURL commands, the endpoint URL, and the API 
+Even if you want to interact with the function through the command line, I'd still recommend vistiing the control panel.
+It has some useful information about your function including specific cURL commands, the endpoint URL, and the API 
 key you need to include in a POST request.
 
-If you want to run cURL without going to the control panel, the following command will get the function's URL:
+If you insist on not using the control panel, you can get the endpoint URL like this
 
 ```sh
 doctl serverless function get career-project/skills-to-careers --url
