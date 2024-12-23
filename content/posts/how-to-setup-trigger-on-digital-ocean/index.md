@@ -8,15 +8,20 @@ tags: ["automation"]
 ShowToc: true
 ---
 
-How can small businesses use modern technology to balance getting work done, and lining up new work?  I started investigating this 
-question a couple months ago and learned quite a bit in the process.    
-
-## What this Post will Cover
+How can small businesses use modern technology to balance getting work done with lining up new work?  I started investigating this 
+question a couple months ago and learned a lot in the process.  
 
 
-## No Code Automation Tools
 
-No-code automation tools empower you to build software systems from APIs in a simple drag-and-drop interface.  As the name suggests, no programming necessary.  Obviously this is great for someone with a product idea, but can't build it themselves and can't justify paying a developer.  The tool is the developer.  
+## What we're going to Build
+
+We're going to build an automation that offers career advice to people based on their skills and interests.  
+
+![carrer-advice-workflow](./figures/career-advice-flow.png)
+
+## No-Code Automation Tools
+
+No-code automation tools empower you to build software systems by combining third-party APIs in a drag-and-drop user interface.  As the name suggests, no programming necessary.  Obviously this is great for someone with a product idea, but can't build it themselves and can't justify paying a developer.  The tool is the developer.  
 
 The 3 most popular no-code platforms on the market today are  
 
@@ -33,28 +38,168 @@ Setting up this scenario was very easy.  The interface is extremely simple and w
 I have nothing bad to say about make.com.  It's a great tool, it's just not the right tool for me.  When you get right down to it, I'd rather write code
 than navigate a user interface that does magical things in the background.
 
-## Trigger.dev 
+## Introduction to Trigger.dev 
 
-I was going to try n8n out because it's supposedly geared toward programmers, but then I came across [trigger.dev](https://trigger.dev/).  Trigger.dev is definitely not a no-code platform.  Instead of dragging, dropping, and connecting blocks on a canvas, workflows are build by writing typescript (or javascript).  You're responsible for bringing any npm packages you need, including the ones that help communicate with RESTful services.
+I was going to try n8n out because it's supposedly geared toward programmers, but then I came across [trigger.dev](https://trigger.dev/).  Trigger.dev is definitely not a no-code platform.  Instead of dragging, dropping, and connecting blocks on a canvas, workflows are build by writing typescript (or javascript).  You're responsible for bringing any npm packages you need, including the ones that help communicate with RESTful services like OpenAI. 
 
-
-
+Describe benefits ...
 
 
 ## Digital Ocean Functions
 
-Besides testing with their dashboard, there's no builtin way to trigger a task remotely.  You need to set up a webservice that trigger's the task when it receives a request.  The documentation does a good job of walking you through the process with a few different services and frameworks.  They don't specifically cover Digital Ocean's serverless functions, so I decided to try that.  
+Besides testing with their dashboard, there's no builtin way to trigger a task remotely.  You need to set up a webservice that trigger's the task when it receives a request.  The documentation does a good job of walking you through the process with a few different services and frameworks.  They don't specifically cover Digital Ocean's serverless functions, so I decided to try that.  I figured that would maximize my learning.    
 
+Before doing anything, create a Digital Ocean account.  Once that's out of the way, we can start setting up our serverless function using 
+Digitial Ocean's command line interface - **doctl** .  
 
-        
-1. Install the `doctl` tools
+We could do a lot of the heavy lifting using Digital Ocean's control panel, but I prefer operating from the command line as much as possible.  Here are the instructions for getting doctl setup.  I tried to keep them short, and added help comments along the way.  If you want more details, each step starts with a link to Digital Ocean's documentation. 
+   
 
-2. Setup a namespace
+### 1. Install the `doctl` command line tool.
 
-3. Connect to the namespace
+[https://docs.digitalocean.com/reference/doctl/how-to/install/](https://docs.digitalocean.com/reference/doctl/how-to/install/)
 
-4. Initialize a project
+I'm currently running Linux and decided to download the cli from GitHub.  Here are steps taken from the link:  
 
+#### 1. Download the archive.
+
+```sh
+cd ~
+wget https://github.com/digitalocean/doctl/releases/download/v1.119.0/doctl-1.119.0-linux-amd64.tar.gz
+```
+
+#### 2. Unzip the archive.
+
+```sh
+tar xf ~/doctl-1.119.0-linux-amd64.tar.gz
+```
+
+#### 3. Put the unarchived CLI program in the search path.
+
+```sh
+sudo mv ~/doctl /usr/local/bin
+```
+
+#### 4. Create an API token for the CLI by 
+
+#### 5. Get access to doctl
+
+Let's say the name of the API key you set up in Step 4 is "my-do-api-key".  Run this
+command to get access.
+
+```sh
+doctl auth init --context my-do-api-key
+```
+
+#### 6. Get serverless support 
+
+To work with Digital Ocean's servless function product through doctl, you need to install an extension.  You'll figure this
+out when you start going through the next few instructions.  To save you the trouble, run this
+
+```sh
+doctl serverless install
+```
+
+Now we're in position to start setting up a function.
+
+### 2. Create a namespace
+
+[https://docs.digitalocean.com/products/functions/how-to/create-namespaces/](https://docs.digitalocean.com/products/functions/how-to/create-namespaces/)
+
+Namespaces give you a way to organize groups of serverless functions.  To create one, you need to give it a label and specify it's location.  Because I'm on the
+west coast, I choose San Francisco.
+
+```sh
+$ doctl serverless namespaces create --label "trigger-dot-dev-fn-namespace" --region "sfo" 
+```
+
+If this was successful, you're connected to the new namespace and doctl responds with a message showing you the namespace ID and the "API Host".  Don't
+worry about writing them down.  You can always get the information by asking for a list of your namespaces:
+
+```sh
+$ doctl serverless namespaces list
+```
+
+### 3. Create a function
+
+[https://docs.digitalocean.com/products/functions/how-to/create-functions/](https://docs.digitalocean.com/products/functions/how-to/create-functions/)
+
+Now it's time to add a serverless function to the namespace.  First, go to the place you want the project to get scafolded out.  Once you've done that
+create a javascript project
+
+```sh
+doctl serverless init --language js doctl-trigger-dot-dev-with-google
+```
+
+### 3. Deploy
+
+Before we start modifying the function, let's deploy and test it.  To deploy the project issue the `deploy` command in your terminal.
+
+```sh
+ doctl serverless deploy doctl-trigger-dot-dev-with-google/
+```
+
+The message returned by doctl will tell you whether or not the deployment succeeded.  
+
+### 4. Execute
+
+We can execute the function through doctl, cURL, or the Digital Ocean control panel.  Here's how you'd execute
+the function through doctl.
+
+```sh
+doctl serverless functions invoke career-project/skills-to-careers
+```
+
+You should get a response that looks like this
+
+```sh
+{
+  "body": "Hello stranger!"
+}
+```
+
+The `invoke` subcommand lets you pass in data to the function. This will be extremely helpful later on.  To see the full list of options,
+ask for help in doctl:
+
+```sh
+doctl serverless functions invoke --help
+```
+
+Even if you don't want to test through the control panel, I'd still recommend visiting it.  It has some useful 
+information about your function including specific cURL commands, the endpoint URL, and the API 
+key you need to include in a POST request.
+
+If you want to run cURL without going to the control panel, the following command will get the function's URL:
+
+```sh
+doctl serverless function get career-project/skills-to-careers --url
+```
+
+### 5. Customization
+
+Our first function works, great!  Now it's time to start modifying the javascript project we created in Step 3 above.  
+
+## Setting up Trigger.dev project
+
+I'm going to assume that you've set up an account (under the Free Tier) and an organization within that account, on Trigger.dev.  
+
+### 1. Create npm project
+
+```sh
+npm init -y
+```
+
+### 2. Setup a Fresh Project
+
+Note, project has a new set of API keys. 
+
+Accounts -> Organizations -> Projects
+
+### 2. Initialize Trigger.dev project 
+
+```sh
+npx trigger.dev@latest init --javascript
+```
 
 ### Digital Ocean
 
