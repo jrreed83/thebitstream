@@ -9,19 +9,11 @@ ShowToc: true
 ---
 
 How can small businesses use modern technology to balance getting work done with lining up new work?  I started investigating this 
-question a couple months ago and learned a lot in the process.  
-
-
-
-## What we're going to Build
-
-We're going to build an automation that offers career advice to people based on their skills and interests.  
-
-![carrer-advice-workflow](./figures/career-advice-flow.png)
+question a couple months ago and learned a lot in the process.  The common themes were leveraging generative AI (no surprise) and no-code
+automation tools.  I had never heard of no-code automation tools before, so I did a little more digging. 
 
 ## No-Code Automation Tools
-
-No-code automation tools empower you to build software systems by combining third-party APIs in a drag-and-drop user interface.  As the name suggests, no programming necessary.  Obviously this is great for someone with a product idea, but can't build it themselves and can't justify paying a developer.  The tool is the developer.  
+No-code automation tools let you build software systems by graphically combining third-party APIs without any programing.  Obviously this is great for someone with a product idea, but can't build it themselves and can't justify paying a developer.  The tool replaces the developer.  
 
 The 3 most popular no-code platforms on the market today are  
 
@@ -29,7 +21,7 @@ The 3 most popular no-code platforms on the market today are
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
 
-So far, I've used make.com to build out a simple experimental system that uses generative AI (OpenAI models for now) to convert existing content into short blog post drafts and emails them on for review.  Everything was managed through a single Google Sheet.  Here's what the "scenario" looks like
+So far, I've used make.com to build out a simple experimental system that uses generative AI (OpenAI models for now) to convert existing content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.  Here's what my make.com "scenario" looks like
 
 ![Make.com automation](./figures/make_automation.png)
 
@@ -42,8 +34,27 @@ than navigate a user interface that does magical things in the background.
 
 I was going to try n8n out because it's supposedly geared toward programmers, but then I came across [trigger.dev](https://trigger.dev/).  Trigger.dev is definitely not a no-code platform.  Instead of dragging, dropping, and connecting blocks on a canvas, workflows are build by writing typescript (or javascript).  You're responsible for bringing any npm packages you need, including the ones that help communicate with RESTful services like OpenAI. 
 
-Describe benefits ...
 
+## What we're going to Build
+
+We're going to build a prototype system that can help teachers provide career advice to students based on information entered into
+a Google Sheet.  Here's a diagram that shows the overall architecture
+
+![carrer-advice-workflow](./figures/career-advice-flow.png)
+
+and here's the technology we'll use to build it:
+
+* Google Sheets
+* Google Apps Script
+* Digital Ocean Serverless Functions
+* Trigger.dev
+* OpenAI API
+* Google Sheets API 
+  
+The teacher using the system doesn't have to worry about any of the technical details.  They'll
+be completely invisible.  
+
+You can find the project on Github.
 
 ## Digital Ocean Functions
 
@@ -133,15 +144,15 @@ doctl serverless init --language js doctl-trigger-dot-dev-with-google
 
 ### 3. Deploy
 
-Before we start modifying the function, let's deploy and test it.  To deploy the project issue the `deploy` command in your terminal.
+Digital Ocean won't know about the project we just had doctl create until it's deployed to their servers.  To deploy,
+run the following command:
 
 ```sh
  doctl serverless deploy doctl-trigger-dot-dev-with-google/
 ```
-
 The message returned by doctl will tell you whether or not the deployment succeeded.  
 
-### 4. Execute
+### 4. Test
 
 We can execute the function through doctl, cURL, or the Digital Ocean control panel.  Here's how you'd execute
 the function through doctl.
@@ -175,7 +186,9 @@ If you want to run cURL without going to the control panel, the following comman
 doctl serverless function get career-project/skills-to-careers --url
 ```
 
-### 5. Customization
+## Adding Trigger.dev
+
+With the setup out of the way, we can start customizing our Digital Ocean serverless project.  
 
 Our first function works, great!  Now it's time to start modifying the javascript project we created in Step 3 above.  
 
@@ -213,59 +226,6 @@ doctl serverless namespaces create
 $ doctl serverless connect
 ```
 
-3. Create a javascript project, which will be deployed in that namespace
-
-```shell
-$ doctl serverless init --language js doctl-trigger-dot-dev
-A local functions project directory 'doctl-trigger-dot-dev' was created for you.
-You may deploy it by running the command shown on the next line:
-  doctl serverless deploy doctl-trigger-dot-dev
-```
-
-
-
-```shell
-$ doctl serverless deploy doctl-trigger-dot-dev
-Deploying '/home/joeyreed/Documents/GITHUB/doctl-trigger-dot-dev'
-  to namespace 'fn-9972eb5c-4690-46d5-822b-5515212c189c'
-  on host 'https://faas-sfo3-7872a1dd.doserverless.co'
-Deployment status recorded in 'doctl-trigger-dot-dev/.deployed'
-
-Deployed functions ('doctl sls fn get <funcName> --url' for URL):
-  - sample/hello
-```
-
-```shell
-$ doctl serverless function list
-Latest Update     Latest Version    Runtime Kind    Function Name
-12/16 05:45:31    0.0.1             nodejs:14       sample/hello
-```
-
-```sh
-$ doctl serverless function invoke sample/hello
-{
-  "body": "Hello stranger!"
-}
-```
-
-```sh
-doctl-trigger-dot-dev/packages/sample/hello$ npx trigger.dev@latest init
-```
-
-```sh
-doctl-trigger-dot-dev/packages/sample/hello$ npm install -D vite
-```
-
-![digital-ocean](./figures/digital-ocean-function.png)
-
-
-
-[node instructions](https://docs.digitalocean.com/products/functions/reference/runtimes/node-js/)
-
-
-## Trigger.dev
-
-[Trigger.dev](https://trigger.dev/) is a newer automation tool 
 
 ### Triggers in Google Sheets
 
