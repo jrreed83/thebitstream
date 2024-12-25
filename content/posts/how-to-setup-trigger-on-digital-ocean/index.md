@@ -8,14 +8,16 @@ tags: ["automation"]
 ShowToc: true
 ---
 
-How do small businesses use modern technology to balance getting work done with lining up new work?  I started investigating this 
-question a couple months ago and learned a lot about business development and marketing.  The common themes were leveraging 
-generative AI (no surprise) and no-code automation tools.  I had never heard of no-code automation tools before, so I did a 
-little more digging. 
+How do small businesses use modern technology to balance getting work done with lining up new work?  
+
+I started investigating this question a couple months ago and learned a lot about business development and 
+marketing in the process.  One of the trends that came up consistently was using generative AI with 
+*no-code automation tools*.  I know what generative AI is, but I've never come across no-code automation tools.
 
 ## What is a No-Code Automation Tool
 
-No-code automation tools let you build software systems by graphically combining third-party APIs without any programing.  Obviously this is great for someone with a product idea but doesn't have the development experience to build it.    
+No-code automation tools let you build software systems by graphically combining prebuilt "integrations" without programming.  Obviously this is 
+great for someone with a product idea but doesn't have the development experience to build it.    
 
 The 3 most popular no-code platforms on the market today are  
 
@@ -23,189 +25,85 @@ The 3 most popular no-code platforms on the market today are
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
 
-So far, I've used make.com to build out a simple experimental system that uses generative AI (OpenAI models for now) to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.  Here's what my make.com "scenario" looks like
+As an experiment, I built a simple make.com "scenario" that uses generative AI to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.
 
 ![Make.com automation](./figures/make_automation.png)
 
-Setting up this scenario was very easy.  The interface is extremely simple and well designed.  In fact, the hardest part was learning how to get make.com and Google to cooperate.  And even that was too tough, I just hadn't gone through the process before.
+Implementing this scenario was very easy.  The most tedious part was setting up the credentials and authorization.  But this isn't make.com's fault; that's always a pain.
 
-I have nothing bad to say about make.com.  It's a great tool, it's just not the right tool for me.  When you get right down to it, I'd rather write code
-than navigate a user interface that does magical things in the background.
+I have nothing bad to say about make.com.  It's a great tool, it's just not the right tool for me.  I prefer programming over navigating a user interface, no matter how great it is.  Programming just gives you more power, flexibility, and independence.  Becoming dependent on a tool is a dangerous thing for an engineer.  In my opinion it's best to do things from a "first-principles" approach as much as possible.  Then you can jump around and use whatever tool you want.                 
+
+So I started looking into alternatives.  I was planning on giving n8n a try because is has a reputation for being geared toward software developers.  But then I came across [Trigger.dev](https://trigger.dev/).    
 
 ## Introduction to Trigger.dev 
 
-I was going to try n8n out because it's supposedly geared toward programmers, but then I came across [trigger.dev](https://trigger.dev/).  Trigger.dev is definitely not a no-code platform.  Instead of dragging, dropping, and connecting blocks on a canvas, workflows are built in typescript (or javascript).  You're responsible for bringing any third-party packages you need, including API libraries. 
+Trigger.dev is definitely not a no-code, or even low-code, tool.  Instead of dragging, dropping, and connecting blocks on a canvas, you build workflows by 
+writing normal typescript (or javascript) code.  Unlike other automation tools, it doesn't include any prebuilt integrations that connect to APIs.  If you want to connect to an API, you need to add the dependencies and write the code yourself.  It doesn't get more "first-principles" than that.
+
+So if I have to write all the code myself, what's the point of using Trigger.dev?  
+
+
+They focus on optimizing the deployment.    
+
+![trigger.dev home](./figures/trigger-dot-dev-home-annotated.png)
+
+
+Besides testing with their dashboard, there's no builtin way to trigger a task.  You need to set up a webservice capable of triggering the Trigger.dev task when it receives the proper request.  They have a few examples on their website that show how to set this up 
+
+*
+*
+
+and serverless function providers
 
 
 ## What we're going to Build
 
-We're going to build a prototype system that can help teachers provide career advice to students based on information entered into
-a Google Sheet. 
+We're going to build a prototype system that helps teachers give career advice to students based on information stored in a Google Sheet. 
 
 ![spreadsheet](./figures/spreadsheet.png)
 
-To start, you put in some basic information about the student in an open row.  Right now, you just need to put in 
-the student's name, age, and interests.  When you're ready to get career advice for the student, just change the Trigger dropdown from
-"Waiting" to "Carrers".  A few seconds later, you'll get the career advice.
+You start by putting the student's name, age, and skills/interestes in an open row.  When you're ready to get career advice, change the "Trigger" dropdown from "Waiting" to "Get Jobs".  A few seconds later, you'll get a list of possible careers for the student to consider.        
 
-I'm not claiming this is ready for production ready or anything.  It can be elaborated and definitely spruced up.  My main objective was to figure out how to wrangle all the tools and APIs.
+I'm not claiming this is production ready or anything.  It can be elaborated and definitely spruced up.  My main objective was to figure out how to get the necessary parts and pieces to work together.
 
 ### System Architecture
 
+If we used make.com for this workflow, we'd only need to set up a few credentials, install the "Make for Google Sheets" extension, and connect up a few integrations.  Easy-peasy!
+
+![make.com extension](./figures/make-dot-com-extension.png)
+
+With Trigger.dev, we need to figure out the details ourselves including 
+
+1. how to trigger an event from a Google Sheet,
+2. how to send data from a Google Sheet to another webservice,
+3. how to interact with the OpenAI API,
+4. how to programatically update the Google Sheet 
+
+After a lot of research and experimentation, here's what I came up with:
+
 ![carrer-advice-workflow](./figures/career-advice-flow.png)
-
-If we used make.com for this, we'd only need make.com, some API keys, and the "Make for Google Sheets" extension available from Google Sheets.
-Trigger.dev only handles the long-running task part of the workflow.  If we want to interact with Google Sheets, we need to figure out
-how to do it ourselves.  Here's a list of the different pieces of technology I ended up brining in to the project:
-
-* Google Sheets
-* Google Apps Script
-* Digital Ocean Serverless Functions
-* Trigger.dev
-* OpenAI API
-* Google Sheets API 
   
-The teacher using the system doesn't have to worry about any of the technical details.  They'll be completely invisible.  
+When the dropdown in the "Trigger" column goes from "Waiting" to "Get Jobs", a Google Apps Script is triggered.  It
+takes the data from that row and sends it to a Digital Ocean Serverless Function that's waiting for requests at a URL.  The only 
+thing the serverless function does is trigger a Trigger.dev task with the data from the Google Sheet.   
 
-All the code is on GitHub.
+## Google Apps Scripts
 
-## Digital Ocean Functions
+## Digital Ocean Serverless Functions
 
-Besides testing with their dashboard, there's no builtin way to trigger a task remotely.  You need to set up a webservice that trigger's the task when it receives a request.  The documentation does a good job of walking you through the process with a few different services and frameworks.  They don't specifically cover Digital Ocean's serverless functions, so I decided to try that.  I figured that would maximize my learning.    
+
+They don't specifically cover Digital Ocean's serverless functions, so I decided to try that.  I like to keep things interesting.    
 
 Before doing anything, create a Digital Ocean account.  Once that's out of the way, we can start setting up our serverless function using 
 Digitial Ocean's command line interface - **doctl** .  
 
 We could do a lot of the heavy lifting using Digital Ocean's control panel, but I prefer operating from the command line as much as possible.  Here are the instructions for getting doctl setup.  I tried to keep them short, and added help comments along the way.  If you want more details, each step starts with a link to Digital Ocean's documentation. 
-   
-
-### 1. Install the `doctl` command line tool.
-
-[https://docs.digitalocean.com/reference/doctl/how-to/install/](https://docs.digitalocean.com/reference/doctl/how-to/install/)
-
-I'm currently running Linux and decided to download the cli from GitHub.  Here are steps taken from the link:  
-
-#### 1. Download the archive.
-
-```sh
-cd ~
-wget https://github.com/digitalocean/doctl/releases/download/v1.119.0/doctl-1.119.0-linux-amd64.tar.gz
-```
-
-#### 2. Unzip the archive.
-
-```sh
-tar xf ~/doctl-1.119.0-linux-amd64.tar.gz
-```
-
-#### 3. Put the unarchived CLI program in the search path.
-
-```sh
-sudo mv ~/doctl /usr/local/bin
-```
-
-#### 4. Create an API token for the CLI by 
-
-#### 5. Get access to doctl
-
-Let's say the name of the API key you set up in Step 4 is "my-do-api-key".  Run this
-command to get access.
-
-```sh
-doctl auth init --context my-do-api-key
-```
-
-#### 6. Get serverless support 
-
-To work with Digital Ocean's servless function product through doctl, you need to install an extension.  You'll figure this
-out when you start going through the next few instructions.  To save you the trouble, run this
-
-```sh
-doctl serverless install
-```
-
-Now we're in position to start setting up a function.
-
-### 2. Create a namespace
-
-[https://docs.digitalocean.com/products/functions/how-to/create-namespaces/](https://docs.digitalocean.com/products/functions/how-to/create-namespaces/)
-
-Namespaces give you a way to organize groups of serverless functions.  To create one, you need to give it a label and specify it's location.  Because I'm on the
-west coast, I choose San Francisco.
-
-```sh
-$ doctl serverless namespaces create --label "trigger-dot-dev-fn-namespace" --region "sfo" 
-```
-
-If this was successful, you're connected to the new namespace and doctl responds with a message showing you the namespace ID and the "API Host".  Don't
-worry about writing them down.  You can always get the information by asking for a list of your namespaces:
-
-```sh
-$ doctl serverless namespaces list
-```
-
-### 3. Create a function
-
-[https://docs.digitalocean.com/products/functions/how-to/create-functions/](https://docs.digitalocean.com/products/functions/how-to/create-functions/)
-
-Now it's time to add a serverless function to the namespace.  First, go to the place you want the project to get scafolded out.  Once you've done that
-create a javascript project
-
-```sh
-doctl serverless init --language js doctl-trigger-dot-dev-with-google
-```
-
-### 3. Deploy
-
-Digital Ocean won't know about the project doctl created until it's deployed to their servers.  To deploy,
-run the following command:
-
-```sh
- doctl serverless deploy doctl-trigger-dot-dev-with-google/
-```
-
-The message doctl returns will tell you whether or not the deployment succeeded.  
-
-### 4. Test
-
-The function can be invoked through doctl, cURL, or the Digital Ocean control panel.  Here's how you'd execute
-the function through doctl.
-
-```sh
-doctl serverless functions invoke career-project/skills-to-careers
-```
-
-You should get a response that looks like this
-
-```sh
-{
-  "body": "Hello stranger!"
-}
-```
-
-If you take a look at the source code, this response will make sense.
-
-
-You can pass parameters into the function too, which will be helpful later.  To see the full list of options just ask doctl for help
-
-```sh
-doctl serverless functions invoke --help
-```
-Even if you want to interact with the function through the command line, I'd still recommend vistiing the control panel.
-It has some useful information about your function including specific cURL commands, the endpoint URL, and the API 
-key you need to include in a POST request.
-
-If you insist on not using the control panel, you can get the endpoint URL like this
-
-```sh
-doctl serverless function get career-project/skills-to-careers --url
-```
-
-## Adding Trigger.dev
 
 With the setup out of the way, we can start customizing our Digital Ocean serverless project.  
 
-Our first function works, great!  Now it's time to start modifying the javascript project we created in Step 3 above.  
+The `project.yml` file in the 
+
+![digital ocean project.yaml](./figures/digital-ocean-yaml.png)
 
 ## Setting up Trigger.dev project
 
@@ -229,58 +127,9 @@ Accounts -> Organizations -> Projects
 npx trigger.dev@latest init --javascript
 ```
 
-### Digital Ocean
-
-1. Create a namespace
-```sh
-doctl serverless namespaces create
-```
-
-2. Connect to namespace so we can add functions
-```sh
-$ doctl serverless connect
-```
 
 
-### Triggers in Google Sheets
 
-
-```sh
-curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST API_URL
-```
-
-```sh
-curl -X POST "https://<your-server>.doserverless.co/api/v1/namespaces/<your-namespace>/actions/sample/hello?blocking=false" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: <your-token>"
-```
-
-For some reason, I can can run the url fetcher in Google App Script without the authorization token.  It doesn't work when I run the cURL command in the terminal.  Expects authorization.  Weird.
-
-
-To run the post request asynchronously, add special parameter to post request ...
-
-```js 
-const obj = UrlFetchApp.fetch(`${api_end_point}?blocking=false`, options);
-```
-
-What connects a deployment to an application in trigger?
-
-When I re-deploy my function, I can't seem to trigger, trigger. Why?
-
-Put "exclude" in tsconfig.json file.  Put the trigger config there ...
-
-Import my task as a type, 
-```js 
-import type { digitial_ocean_task } from "./trigger/example";
-```
-
-```sh
-npx trigger.dev@latest deploy
-```
-```sh
-curl -d 'name=Sammy' https://faas-sfo3-7872a1dd.doserverless.co/api/v1/web/fn-9972eb5c-4690-46d5-822b-5515212c189c/sample/hello
-``````
 
 
 Google Stuff:
