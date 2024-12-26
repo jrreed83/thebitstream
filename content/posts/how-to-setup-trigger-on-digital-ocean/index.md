@@ -11,29 +11,48 @@ ShowToc: true
 How do small businesses use modern technology to balance getting work done with lining up new work?  
 
 I started investigating this question a couple months ago and learned a lot about business development and 
-marketing in the process.  One of the trends that came up consistently was using generative AI and "no-code" tools to 
-automate critical, but repetitive, business tasks like content and lead generation.  Even with no programming experience,
-people are able to build amazingly sophisticated software systems that have a major impact on their business's
-bottom line.  I needed to know more.
+marketing in the process.  One of the trends that came up consistently was using generative AI and "workflow automation tools" to 
+automate critical, but repetitive, business tasks.  Here's a list taken straight from the landing page for one of the most
+popular automation products out there, [zapier](https://zapier.com):
+
+* Sales handoffs
+* Markeing campagins
+* Data management
+* IT helpdesk
+* Lead Management
+* Revops 
+
+Even with no programming experience, people are able to build amazingly sophisticated software systems that have a major impact on their business's bottom line. 
+
+Over the course of my career, I've used many different types of software products and tools.  None of them helped me automate a business task.  Sounds pretty good to me.  I appreciate the value of good business strategy, but I want to spend my time doing what I get paid to do - engineering.  If these tools can help me speed-up and codify even a small part of the business, then it's worth learning more.    
+
+## What We'll Cover
 
 In this post we're going to start out by
 
-1. describing what no-code automation tools are,
+1. describing what workflow automation tools are,
 2. discussing why they may not be right for you,
 3. introducing a powerful open source alternative called [Trigger.dev](https://trigger.dev/)
 
 After that, I'll describe how to build a simple career-guidance system that uses Trigger.Dev, Google Sheets, and generative AI.
 
-## What is a No-Code Automation Tool
+## What is a Workflow Automation Tool
 
-No-code automation tools let you build software systems by graphically combining prebuilt "integrations".  No programming required.  Obviously this is 
-great for someone with a product idea but doesn't have the development experience to build it.     
-
-The 3 most popular no-code platforms on the market today are  
+Workflow automation tools let you build software systems by conveniently combining third-party APIs.  The most popular ones, like
 
 * [make.com](https://www.make.com/en)
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
+
+require no programming.  Instead, you design the workflows visually by dropping blocks onto a canvas and connecting them together. Like this: 
+
+![n8n automation](./figures/example-n88-automation.png)
+ 
+Some of the blocks implement programming constructs like logic or iteration.  Others, usually called "integrations", communicate with APIs.  To use an integration,  you just need to plug in your API credentials.
+
+Obviously this is great for someone with a product idea but doesn't have the development experience to build it themselves.  It's also an efficiency booster for experienced programmers.  Working through API documentation might be interesting for awhile.  But at some point, your time is probably better spent doing something else.  These tools can give you some of your time back.            
+
+## Experimenting with make.com 
 
 As an experiment, I built a simple make.com (aka Make) "scenario" that uses generative AI to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.
 
@@ -50,9 +69,9 @@ Make simply doesn't conform to my "first-principles" philosophy, so I started lo
 ## Introduction to Trigger.dev 
 
 Trigger.dev is much different than other popular automations tools.  For one thing, it's not no-code.  Instead of dragging, 
-dropping, and connecting integrations on a canvas, you implement workflows using their node library, and any other javascript/typescript other 
-code you need.  There aren't any pre-built integrations.  If you want to connect to an API, you need to add the dependencies and write the code 
-yourself.  It doesn't get more "first-principles" than that.
+dropping, and connecting blocks on a canvas, you implement workflows using their node library, and any other javascript/typescript other 
+code you need.  There aren't any pre-built integrations.  If you want to connect to an API, you add the dependencies and write the code 
+yourself.  It doesn't get more "first-principles" than that.  
 
 If you aren't getting a UI, and you're aren't getting integrations, what are you getting?    
 
@@ -62,18 +81,19 @@ Like their website suggests, you're getting a serverless deployment solution whe
 
 > "Write workflows in normal async code and we'll handle the rest ..."
 
-They've figured out a cost-effective way to execute long-running tasks on the web, without worrying about timeouts.  This opens up 
-all sorts of possibilities that aren't possible with other serverless computing soluions.  Here's a list of some services
-with their maximum allowable compute times.  The links take you to the web pages with the details.
+They've figured out a cost-effective way to execute long-running tasks on the web, without worrying about timeouts.  Time-consuming calculations,
+multiple API calls, long-delays, and scheduling can all be expressed in code.  This opens up all sorts of possibilities that don't exist with other serverless computing options.  No Function as a Service (FaaS) that I know of, will successfully return after 15 minutes. Here's a list of popular options with their run-time limits:
 
 * Digital Ocean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
 * Supabase Edge Functions: [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
 * Vercel Functions: [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
 * AWS Lambda Functions: [15 minutes](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
-* Railway
-* Render
-* Fly.io
 
+So certain complex workflows probably can't be executed by a single function.  What if you distributed the work between several functions?  Sure, you 
+can do that, but this introduces more complexity.  Serverless functions can't be schedule in code.  If you want to execute a function at some
+time in the future, you'll probably need to modify some configuration file.  Even if you manage to nail the scheduling, you'll probably need to bring in a task queue to store data between functions.  
+
+Trigger.dev handles all that extra complexity for you!
 
 
 ## What we're going to Build
