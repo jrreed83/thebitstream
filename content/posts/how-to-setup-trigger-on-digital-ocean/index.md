@@ -16,8 +16,8 @@ marketing in the process.  One of the trends that came up consistently was using
 
 ## What is a No-Code Automation Tool
 
-No-code automation tools let you build software systems by graphically combining prebuilt "integrations" without programming.  Obviously this is 
-great for someone with a product idea but doesn't have the development experience to build it.    
+No-code automation tools let you build software systems by graphically combining prebuilt "integrations".  No programming required.  Obviously this is 
+great for someone with a product idea but doesn't have the development experience to build it.     
 
 The 3 most popular no-code platforms on the market today are  
 
@@ -25,27 +25,41 @@ The 3 most popular no-code platforms on the market today are
 * [zapier](https://zapier.com/)
 * [n8n](https://n8n.io/)
 
-As an experiment, I built a simple make.com "scenario" that uses generative AI to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.
+As an experiment, I built a simple make.com (aka Make) "scenario" that uses generative AI to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.
 
 ![Make.com automation](./figures/make_automation.png)
 
-Implementing this scenario was very easy.  The most tedious part was setting up the credentials and authorization.  But this isn't make.com's fault; that's always a pain.
+Implementing this scenario was very easy.  The most tedious part was setting up Google crededentials.  But this isn't Make's fault; that's always a pain.
 
-I have nothing bad to say about make.com.  It's a great tool, it's just not the right tool for me.  I prefer programming over navigating a user interface, no matter how great it is.  Programming just gives you more power, flexibility, and independence.  Becoming dependent on a tool is a dangerous thing for an engineer.  In my opinion it's best to do things from a "first-principles" approach as much as possible.  Then you can jump around and use whatever tool you want.                 
+I have nothing bad to say about Make.  It's a fantastic service, it's just not the right tool for me.  I prefer programming over working a user interface, no matter how great it is.  Yep, programming takes more work.  But in return you get more power, more flexibility, and more independence.  
 
-So I started looking into alternatives.  I was planning on giving n8n a try because is has a reputation for being geared toward software developers.  But then I came across [Trigger.dev](https://trigger.dev/).    
+This last point is particulary important to me.  As an electrical engineer,  it's very easy to become a victim of "vendor lock-in".  Adopting software tools is unavoidable, but you don't want to become so dependent on them that you forget the fundamentals.  If you can afford the time, it's best to strive for a first-principles as much as possible.  Then you can jump around and use whatever tool you want.                     
+
+Make simply doesn't conform to my "first-principles" philosophy, so I started looking into alternatives.  I was planning on giving n8n a try because is has a reputation for being geared toward software developers.  But then I came across [Trigger.dev](https://trigger.dev/).    
 
 ## Introduction to Trigger.dev 
 
-Trigger.dev is definitely not a no-code, or even low-code, tool.  Instead of dragging, dropping, and connecting blocks on a canvas, you build workflows by 
-writing normal typescript (or javascript) code.  Unlike other automation tools, it doesn't include any prebuilt integrations that connect to APIs.  If you want to connect to an API, you need to add the dependencies and write the code yourself.  It doesn't get more "first-principles" than that.
+Trigger.dev is much different than the other popular automations tools out there.  For one thing, it's not no-code.  Instead of dragging, 
+dropping, and connecting integrations on a canvas, you implement workflows in typescript (or javascript).  There aren't any pre-built 
+integrations.  If you want to connect to an API, you need to add the dependencies and write the code yourself.  It doesn't get more "first-principles" than that.
 
-So if I have to write all the code myself, what's the point of using Trigger.dev?  
+If you aren't getting a UI, and you're not getting integrations, what are you getting?  Look no further than Trigger.dev's home page:
 
+![trigger.dev home](./figures/trigger-dot-dev-home-annotated.png)
+
+In case the circled text is tough to read, here's the important part:
+
+> "Write workflows in normal async code and we'll handle the rest ..."
+
+Serverless function timeouts
+* Digital Ocean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
+* Supabase Edge Functions [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
+* Vercel Functions [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
+* AWS Lambdas [15 minuts](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
 
 They focus on optimizing the deployment.    
 
-![trigger.dev home](./figures/trigger-dot-dev-home-annotated.png)
+
 
 
 Besides testing with their dashboard, there's no builtin way to trigger a task.  You need to set up a webservice capable of triggering the Trigger.dev task when it receives the proper request.  They have a few examples on their website that show how to set this up 
@@ -54,6 +68,7 @@ Besides testing with their dashboard, there's no builtin way to trigger a task. 
 *
 
 and serverless function providers
+
 
 
 ## What we're going to Build
@@ -68,9 +83,9 @@ I'm not claiming this is production ready or anything.  It can be elaborated and
 
 ### System Architecture
 
-If we used make.com for this workflow, we'd only need to set up a few credentials, install the "Make for Google Sheets" extension, and connect up a few integrations.  Easy-peasy!
+If we used Make for this workflow, we'd only need to set up a few credentials, install the "Make for Google Sheets" extension, and connect up a few integrations.  Easy-peasy!
 
-![make.com extension](./figures/make-dot-com-extension.png)
+![Make extension](./figures/make-dot-com-extension.png)
 
 With Trigger.dev, we need to figure out the details ourselves including 
 
