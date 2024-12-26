@@ -68,7 +68,7 @@ Make simply doesn't conform to my "first-principles" philosophy, so I started lo
 
 ## Introduction to Trigger.dev 
 
-Trigger.dev is much different than other popular automations tools.  For one thing, it's not no-code.  Instead of dragging, 
+Trigger.dev is much different than other popular automation tools.  For one thing, it's not no-code.  Instead of dragging, 
 dropping, and connecting blocks on a canvas, you implement workflows using their node library, and any other javascript/typescript other 
 code you need.  There aren't any pre-built integrations.  If you want to connect to an API, you add the dependencies and write the code 
 yourself.  It doesn't get more "first-principles" than that.  
@@ -90,21 +90,21 @@ multiple API calls, long-delays, and scheduling can all be expressed in code.  T
 * AWS Lambda Functions: [15 minutes](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
 
 So certain complex workflows probably can't be executed by a single function.  What if you distributed the work between several functions?  Sure, you 
-can do that, but this introduces more complexity.  Serverless functions can't be schedule in code.  If you want to execute a function at some
-time in the future, you'll probably need to modify some configuration file.  Even if you manage to nail the scheduling, you'll probably need to bring in a task queue to store data between functions.  
+can do that, but this introduces more complexity.  Serverless functions can't be scheduled in code.  If you want to execute a function at some
+time in the future, you'll need to modify a configuration file or database.  And even if you manage to nail the scheduling, you'll probably need to bring in a task queue to store data between functions.  
 
 Trigger.dev handles all that extra complexity for you!
 
 
 ## What we're going to Build
 
-We're going to build a prototype system that helps teachers give career advice to students based on information stored in a Google Sheet. 
+We're going to build a proof-of-concept system that helps teachers give career advice to students based on information stored in a Google Sheet. 
 
 ![spreadsheet](./figures/spreadsheet.png)
 
-You start by putting the student's name, age, and skills/interestes in an open row.  When you're ready to get career advice, change the "Trigger" dropdown from "Waiting" to "Get Jobs".  A few seconds later, you'll get a list of possible careers for the student to consider.        
+You start by putting the student's name, age, and skills/interests in an open row.  When you're ready to get career advice, change the "Trigger" dropdown from "Waiting" to "Get Jobs".  A few seconds later, you'll get a list of possible careers for the student to consider.        
 
-I'm not claiming this is production ready or anything.  It can be elaborated and definitely spruced up.  My main objective was to figure out how to get the necessary parts and pieces to work together.
+There are many ways to make this system more useful, accurate, and visually appealing.  I'll continue working on it.  My main objective here was to build something functional.
 
 ### System Architecture
 
@@ -112,25 +112,32 @@ If we used Make for this workflow, we'd only need to set up a few credentials, i
 
 ![Make extension](./figures/make-dot-com-extension.png)
 
-With Trigger.dev, we need to figure out the details ourselves including 
+With Trigger.dev, we need to figure out a lot of the details ourselves: 
 
 1. how to trigger an event from a Google Sheet,
 2. how to send data from a Google Sheet to another webservice,
 3. how to interact with the OpenAI API,
 4. how to programatically update the Google Sheet 
 
-After a lot of research and experimentation, here's what I came up with:
+After some research, here's what I came up with:
 
 ![carrer-advice-workflow](./figures/career-advice-flow.png)
   
-When the dropdown in the "Trigger" column goes from "Waiting" to "Get Jobs", a Google Apps Script is triggered.  It
-takes the data from that row and sends it to a Digital Ocean Serverless Function that's waiting for requests at a URL.  The only 
-thing the serverless function does is trigger a Trigger.dev task with the data from the Google Sheet.   
+Changing the state of the dropdown from "Waiting" to "Get Jobs: triggers a Google Apps Script.  The script
+takes the data from that row and sends it to a Digital Ocean Serverless Function that's waiting for requests at a 
+particular URL.  The Digital Ocean Function does almost no work.  It's only purpose is to trigger a deployed Trigger.dev 
+task with the spreadsheet data.  Think of it as a webhook.  Inside the task, the payload is destructured and integrated into
+an OpenAI chat prompt.  Once the model's response is returned, the task uses the Google Sheets API to update the spreadsheet
+with the career advice.
+
+Yes, this workflow is simple enough that the whole thing could be put in the Digital Ocean function.  But if I want to 
+extend the capabilities of this system later on, I'd rather get the right tools in place now.     
 
 ## Google Apps Scripts
 
-## Digital Ocean Serverless Functions
+Google Apps Scripts let's you manipulate Google Workspace products in javascript.  
 
+## Digital Ocean Serverless Functions
 
 They don't specifically cover Digital Ocean's serverless functions, so I decided to try that.  I like to keep things interesting.    
 
@@ -144,6 +151,7 @@ With the setup out of the way, we can start customizing our Digital Ocean server
 The `project.yml` file in the 
 
 ![digital ocean project.yaml](./figures/digital-ocean-yaml.png)
+
 
 ## Setting up Trigger.dev project
 
