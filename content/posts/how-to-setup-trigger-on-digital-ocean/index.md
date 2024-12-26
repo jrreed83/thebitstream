@@ -11,8 +11,18 @@ ShowToc: true
 How do small businesses use modern technology to balance getting work done with lining up new work?  
 
 I started investigating this question a couple months ago and learned a lot about business development and 
-marketing in the process.  One of the trends that came up consistently was using generative AI with 
-*no-code automation tools*.  I know what generative AI is, but I've never come across no-code automation tools.
+marketing in the process.  One of the trends that came up consistently was using generative AI and "no-code" tools to 
+automate critical, but repetitive, business tasks like content and lead generation.  Even with no programming experience,
+people are able to build amazingly sophisticated software systems that have a major impact on their business's
+bottom line.  I needed to know more.
+
+In this post we're going to start out by
+
+1. describing what no-code automation tools are,
+2. discussing why they may not be right for you,
+3. introducing a powerful open source alternative called [Trigger.dev](https://trigger.dev/)
+
+After that, I'll describe how to build a simple career-guidance system that uses Trigger.Dev, Google Sheets, and generative AI.
 
 ## What is a No-Code Automation Tool
 
@@ -39,35 +49,30 @@ Make simply doesn't conform to my "first-principles" philosophy, so I started lo
 
 ## Introduction to Trigger.dev 
 
-Trigger.dev is much different than the other popular automations tools out there.  For one thing, it's not no-code.  Instead of dragging, 
-dropping, and connecting integrations on a canvas, you implement workflows in typescript (or javascript).  There aren't any pre-built 
-integrations.  If you want to connect to an API, you need to add the dependencies and write the code yourself.  It doesn't get more "first-principles" than that.
+Trigger.dev is much different than other popular automations tools.  For one thing, it's not no-code.  Instead of dragging, 
+dropping, and connecting integrations on a canvas, you implement workflows using their node library, and any other javascript/typescript other 
+code you need.  There aren't any pre-built integrations.  If you want to connect to an API, you need to add the dependencies and write the code 
+yourself.  It doesn't get more "first-principles" than that.
 
-If you aren't getting a UI, and you're not getting integrations, what are you getting?  Look no further than Trigger.dev's home page:
+If you aren't getting a UI, and you're aren't getting integrations, what are you getting?    
 
 ![trigger.dev home](./figures/trigger-dot-dev-home-annotated.png)
 
-In case the circled text is tough to read, here's the important part:
+Like their website suggests, you're getting a serverless deployment solution where you
 
 > "Write workflows in normal async code and we'll handle the rest ..."
 
-Serverless function timeouts
+They've figured out a cost-effective way to execute long-running tasks on the web, without worrying about timeouts.  This opens up 
+all sorts of possibilities that aren't possible with other serverless computing soluions.  Here's a list of some services
+with their maximum allowable compute times.  The links take you to the web pages with the details.
+
 * Digital Ocean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
-* Supabase Edge Functions [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
-* Vercel Functions [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
-* AWS Lambdas [15 minuts](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
-
-They focus on optimizing the deployment.    
-
-
-
-
-Besides testing with their dashboard, there's no builtin way to trigger a task.  You need to set up a webservice capable of triggering the Trigger.dev task when it receives the proper request.  They have a few examples on their website that show how to set this up 
-
-*
-*
-
-and serverless function providers
+* Supabase Edge Functions: [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
+* Vercel Functions: [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
+* AWS Lambda Functions: [15 minutes](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
+* Railway
+* Render
+* Fly.io
 
 
 
