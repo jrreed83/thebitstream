@@ -1,5 +1,5 @@
 ---
-title: How to use Trigger.dev using Digital Ocean serverless functions.
+title: How to use Trigger.dev usingDigitalOcean serverless functions.
 author: Joey Reed
 date: 2024-12-20
 draft: true
@@ -81,7 +81,7 @@ Like their website suggests, you're getting a serverless deployment solution whe
 They've figured out a cost-effective way to containerize and execute long-running tasks on the web, without worrying about timeouts.  Time-consuming calculations,
 multiple API calls, long-delays, and complex scheduling can all be expressed in code.  This opens up all sorts of possibilities that would be extremely difficult to implement in other serverless computing options.  No Function as a Service (FaaS) that I know of, will successfully run for longer than 15 minutes. Here's a list of popular options with their run-time limits:
 
-* Digital Ocean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
+* DigitalOcean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
 * Supabase Edge Functions: [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
 * Vercel Functions: [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
 * AWS Lambda Functions: [15 minutes](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
@@ -119,13 +119,13 @@ After some research, here's what I came up with:
 ![carrer-advice-workflow](./figures/career-advice-flow.png)
   
 Changing the state of the dropdown from "Waiting" to "Get Jobs" triggers a Google Apps Script.  The script
-takes the data from that row and sends it to a Digital Ocean Serverless Function that's waiting for requests at a 
-particular URL.  The Digital Ocean Function does almost no work.  It's only purpose is to trigger a deployed Trigger.dev 
+takes the data from that row and sends it to a DigitalOcean Function that's waiting for requests at a 
+particular URL.  The DigitalOcean Function does almost no work.  It's only purpose is to trigger a deployed Trigger.dev 
 task with the spreadsheet data.  Think of it as a webhook.  Inside the task, the payload is destructured and integrated into
 an OpenAI chat prompt.  Once the model's response is returned, the task uses the Google Sheets API to update the spreadsheet
 with the career advice.
 
-Yes, this workflow is simple enough that the whole thing could be put in the Digital Ocean function.  But if I want to 
+Yes, this workflow is simple enough that the whole thing could be put in the DigitalOcean function.  But if I want to 
 extend the capabilities of this system later on, I'd rather get the right tools in place now.     
 
 ## Google Apps Scripts
@@ -142,21 +142,31 @@ that requires authorization.
 
 Remember, we want to run the script when the "Trigger" dropdown transitions from "Waiting" to "Get Jobs.  This is a job for the "On Edit" trigger.  
 
-The last thing we need to do is find a way to store credentials without revealing them in the Apps Script.  Once we set it up, we'll need to store the URL and authorization token for our Digital Ocean function.  The simplest way to do this is adding the key and value as a script property, and retreve the value in the script when you needed.  Very similar to creating an `.env` file.  Script properties are accessible under the "Project Settings" tab. 
+The last thing we need to do is find a way to store credentials without revealing them in the Apps Script.  Once we set it up, we'll need to store the URL and authorization token for our DigitalOcean function.  The simplest way to do this is adding the key and value as a script property, and retreve the value in the script when you needed.  Very similar to creating an `.env` file.  Script properties are accessible under the "Project Settings" tab. 
 
-## Digital Ocean Serverless Functions
+## DigitalOcean Functions
 
-The Trigger.dev website covers several ways of triggering tasks from web frameworks and serverless functions.  They don't discuss using Digital Ocean's Serverless Function product, so I decided to try that.  Maybe someone using Digital Ocean will find it useful.  
+The Trigger.dev website covers several ways of triggering tasks from web frameworks and different serverless functions.  They don't discuss usingDigitalOcean's Serverless Function product, so I decided to try that.  Maybe someone using DigitalOcean will find it useful.  
 
-We'll do everything with doctl, Digital Ocean's command line tool.  Instructions, including links to the official documentation are in my GitHub repository.    
+We'll do everything with doctl, DigitalOcean's command line tool.  Instructions, including links to the official documentation are in my GitHub repository.
 
-When you initialize a serverless function wih doctl, you get a configuration file, 3 nested folders, and a single javascript function.    
+When you initialize a serverless function project with doctl you get a `project.yml` configuration file and a `packages/` directory.  The `packages/` directory contains everything you need for one "package" and one serverless function.  If you want more packages and/or more functions, just add more directories.  Chances are, you'll want to change the default package and function names.  No problem, just make sure that the new directory names match the package and function names in the `package.yml` file.  Otherwise deployment will fail.  
 
-With the setup out of the way, we can start customizing our Digital Ocean serverless project.  
+Packages and functions can be configured in the `project.yml` file.  Here's the `project.yml` file for my project:
 
-The `project.yml` file in the 
+![DigitalOcean project.yaml](./figures/digital-ocean-yaml.png)
 
-![digital ocean project.yaml](./figures/digital-ocean-yaml.png)
+It contains one package called `career-project` and one function in that package called `skills-to-careers`.  When I started working
+on this, they only supported node versions 14 and 18.  To minimize compatibility issues, I decided to go with node version 18. 
+
+To be on the safe side, I maxed out the memory the function can use (1GB) and increased the timeout to 5 minutes.  Allocating this much memory to a function that does almost no work might seem a bit extreme.  For whatever reason though, during testing, executions failed because the function ran out of memory.  At least that's what the logs said.  Bumping it up fixed the issue.                        
+
+I also added my Trigger.dev credentials to the function's environment section as a "template variable".  That way I can add `project.yml` to my git repository without sharing API credentials.  To get this to work, open up a `.env` file at the top-level of the project and add 
+
+```sh
+TRIGGER_SECRET_KEY=<add your secret key here>
+```
+Just make sure that you don't add `.env` to version control!  I'll explain how to get your `TRIGGER_SECRET_KEY` in the next section.
 
 
 ## Setting up Trigger.dev project
@@ -188,7 +198,7 @@ npx trigger.dev@latest init --javascript
 
 Google Stuff:
 1. Installable trigger in Google Appscript to trigger DO function
-2. Store digital ocean auth info in "Script Properties" of AppScript DashBoard.
+2. StoreDigitalOcean auth info in "Script Properties" of AppScript DashBoard.
 3. Google Cloud project using API to communicate back to spreadsheet.  Need to setup a project, enable Google Sheets API in that project.  Use Service Project style authorization with a JWT (JSON Web token)
 
 
