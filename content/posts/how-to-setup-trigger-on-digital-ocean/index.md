@@ -1,5 +1,5 @@
 ---
-title: How to use Trigger.dev usingDigitalOcean serverless functions.
+title: Workflow Automation with Trigger.dev
 author: Joey Reed
 date: 2024-12-20
 draft: true
@@ -146,18 +146,18 @@ The last thing we need to do is find a way to store credentials without revealin
 
 ## DigitalOcean Functions
 
-The Trigger.dev website covers several ways of triggering tasks from web frameworks and different serverless functions.  They don't discuss usingDigitalOcean's Serverless Function product, so I decided to try that.  Maybe someone using DigitalOcean will find it useful.  
+The Trigger.dev website covers several ways of triggering tasks from web frameworks and different serverless functions.  They don't talk about DigitalOcean's serverless function product, so I decided to try that.  Maybe someone using DigitalOcean will find it useful.  
 
 We'll do everything with doctl, DigitalOcean's command line tool.  Instructions, including links to the official documentation are in my GitHub repository.
 
-When you initialize a serverless function project with doctl you get a `project.yml` configuration file and a `packages/` directory.  The `packages/` directory contains everything you need for one "package" and one serverless function.  If you want more packages and/or more functions, just add more directories.  Chances are, you'll want to change the default package and function names.  No problem, just make sure that the new directory names match the package and function names in the `package.yml` file.  Otherwise deployment will fail.  
+When you initialize a serverless function project with doctl you get a `project.yml` configuration file and a `packages/` directory.  The `packages/` directory contains everything you need for one "package" and one serverless function.  If you want more packages and/or more functions, just add more directories.  Chances are, you'll want to change the default package and function names.  No problem, just make sure that the new directory names match the package and function names in the `package.yml` file.  Otherwise your deployment will fail.  
 
-Packages and functions can be configured in the `project.yml` file.  Here's the `project.yml` file for my project:
+Here's the `project.yml` file for my project:
 
 ![DigitalOcean project.yaml](./figures/digital-ocean-yaml.png)
 
 It contains one package called `career-project` and one function in that package called `skills-to-careers`.  When I started working
-on this, they only supported node versions 14 and 18.  To minimize compatibility issues, I decided to go with node version 18. 
+on this, DigitalOcean only supported node versions 14 and 18.  To minimize compatibility issues, I decided to go with node version 18. 
 
 To be on the safe side, I maxed out the memory the function can use (1GB) and increased the timeout to 5 minutes.  Allocating this much memory to a function that does almost no work might seem a bit extreme.  For whatever reason though, during testing, executions failed because the function ran out of memory.  At least that's what the logs said.  Bumping it up fixed the issue.                        
 
@@ -168,47 +168,9 @@ TRIGGER_SECRET_KEY=<add your secret key here>
 ```
 Just make sure that you don't add `.env` to version control!  I'll explain how to get your `TRIGGER_SECRET_KEY` in the next section.
 
-
-## Setting up Trigger.dev project
-
-I'm going to assume that you've set up an account (under the Free Tier) and an organization within that account, on Trigger.dev.  
-
-### 1. Create npm project
-
-```sh
-npm init -y
-```
-
-### 2. Setup a Fresh Project
-
-Note, project has a new set of API keys. 
-
-Accounts -> Organizations -> Projects
-
-### 2. Initialize Trigger.dev project 
-
-```sh
-npx trigger.dev@latest init --javascript
-```
+DigitalOcean Functions use file-based routing.  This means that a deployed project's API routes match the directory layout.  Parameters submitted to a route are bundled with a bunch of http data, and passed as an object to the specified entry-point.  The default entry-point is called "main".  You can change it to something else by modifyign the function's `main` value in the `project.yml`.  But why would I want to do that; "main" seems like a good name to me.  The build process that runs when you start a deployment figures out which javascript file defines the entry-point.  I'm not sure what would happen if you had multiple javascript files with their own `main` functions.  Probably nothing good.
 
 
 
 
 
-
-Google Stuff:
-1. Installable trigger in Google Appscript to trigger DO function
-2. StoreDigitalOcean auth info in "Script Properties" of AppScript DashBoard.
-3. Google Cloud project using API to communicate back to spreadsheet.  Need to setup a project, enable Google Sheets API in that project.  Use Service Project style authorization with a JWT (JSON Web token)
-
-
-Got tyypescript compilation errors in the trigger.dev file.  Added annotation at top of file.  The issues were related to the google sheets API.
-
-Error: While deploying action 'sample/hello': 413 Payload Too Large.  Isn't there supposed to be some sort of tree shaking or something?
-Remember, it worked before, is it because the dependencies are getting added?  Yes. I ended up removing the dependencies required for the trigger task, manually.
-This seems too weird and wacky.  Is this because we want all the tasks used for trigger to be devdependencies ?  
-
-Need to run typescript, and then not install dependencies ...
-
-I think the better option is to separate the trigger task from the backend task that "calls" it.  The backend code doesn't need any typescript.  The SDK can 
-call the task via id alone...
