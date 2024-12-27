@@ -144,7 +144,7 @@ Remember, we want to run the script when the "Trigger" dropdown transitions from
 
 The last thing we need to do is find a way to store credentials without revealing them in the Apps Script.  Once we set it up, we'll need to store the URL and authorization token for our DigitalOcean function.  The simplest way to do this is adding the key and value as a script property, and retreve the value in the script when you needed.  Very similar to creating an `.env` file.  Script properties are accessible under the "Project Settings" tab. 
 
-## DigitalOcean Functions
+## Configuring DigitalOcean Function Project
 
 The Trigger.dev website covers several ways of triggering tasks from web frameworks and different serverless functions.  They don't talk about DigitalOcean's serverless function product, so I decided to try that.  Maybe someone using DigitalOcean will find it useful.  
 
@@ -157,7 +157,7 @@ Here's the `project.yml` file for my project:
 ![DigitalOcean project.yaml](./figures/digital-ocean-yaml.png)
 
 It contains one package called `career-project` and one function in that package called `skills-to-careers`.  When I started working
-on this, DigitalOcean only supported node versions 14 and 18.  To minimize compatibility issues, I decided to go with node version 18. 
+on this, DigitalOcean only supported node versions 14 and 18.  To minimize compatibility issues, I went with 18. 
 
 To be on the safe side, I maxed out the memory the function can use (1GB) and increased the timeout to 5 minutes.  Allocating this much memory to a function that does almost no work might seem a bit extreme.  For whatever reason though, during testing, executions failed because the function ran out of memory.  At least that's what the logs said.  Bumping it up fixed the issue.                        
 
@@ -166,11 +166,18 @@ I also added my Trigger.dev credentials to the function's environment section as
 ```sh
 TRIGGER_SECRET_KEY=<add your secret key here>
 ```
-Just make sure that you don't add `.env` to version control!  I'll explain how to get your `TRIGGER_SECRET_KEY` in the next section.
+Just make sure that you don't add `.env` to version control!  The `TRIGGER_SECRET_KEY` will be discussed in the next section.
 
-DigitalOcean Functions use file-based routing.  This means that a deployed project's API routes match the directory layout.  Parameters submitted to a route are bundled with a bunch of http data, and passed as an object to the specified entry-point.  The default entry-point is called "main".  You can change it to something else by modifyign the function's `main` value in the `project.yml`.  But why would I want to do that; "main" seems like a good name to me.  The build process that runs when you start a deployment figures out which javascript file defines the entry-point.  I'm not sure what would happen if you had multiple javascript files with their own `main` functions.  Probably nothing good.
+DigitalOcean Functions use file-based routing, which means that the API routes match the directory layout.  Parameters submitted to a function's route are bundled with a bunch of http data, and passed as an object to the specified entry-point.  By default, the entry-point is a function named `main`.  If you need to change the entry-point for some reason, modify the function's `main` value in the `project.yml`.  I'm happy with `main` though.  The build process figures out which javascript file contains the entry-point.  I'll call this the main function.   
 
+The `skills-to-careers` function will need a few dependencies.  To prepare, I turned the `skills-to-caeer` directory into an npm package with an `npm init -y`.  Because I don't like source code and configuration files to be mixed together, I created a `src\` folder for all my javascript files.  I moved the main function under `src\`, and made it the entry point for my npm package.
 
+To be clear, there are two entry points: an entry point for the DigitalOcean Function, and an entry point for the npm package.  If you don't have both properly set, the serverless function will deploy but not work.
 
+## Adding Trigger.dev
 
+To use Trigger.dev, you need to setup an account.  
 
+## Deployment
+
+## Conclusion
