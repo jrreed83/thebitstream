@@ -31,10 +31,10 @@ Over the course of my career, I've used many different types of software product
 In this post we're going to start out by
 
 1. describing what workflow automation tools are,
-2. discussing why they may not be right for you,
+2. discussing why "no-code" platforms may not be the right choice,
 3. introducing a powerful open source alternative called [Trigger.dev](https://trigger.dev/)
 
-After that, I'll describe how to build a simple career-guidance system that uses Trigger.Dev, Google Sheets, and generative AI.
+After that, I'll use Trigger.dev, Google Sheets, and generative AI to build a proof-of-concept career advice system.
 
 ## What is a Workflow Automation Tool
 
@@ -48,13 +48,13 @@ require no programming.  Instead, you design the workflows visually by dropping 
 
 ![n8n automation](./figures/example-n88-automation.png)
  
-Some of the blocks implement programming constructs like logic or iteration.  Others, usually called "integrations", communicate with APIs.  To use an integration,  you just need to plug in your API credentials.
+Some of the blocks implement simple programming constructs like logic or iteration.  Others, usually called "integrations", communicate with APIs.  To use an integration,  you just need to plug in your API credentials.
 
 Obviously this is great for someone with a product idea but doesn't have the development experience to build it themselves.  It's also an efficiency booster for experienced programmers.  Working through API documentation might be interesting for awhile.  But at some point, your time is probably better spent doing something else.  These tools can give you some of your time back.            
 
 ## Experimenting with make.com 
 
-As an experiment, I built a simple make.com (aka Make) "scenario" that uses generative AI to convert old written content into short blog post drafts and emails them on for review.  Everything is managed through a single Google Sheet.
+As an experiment, I built a simple make.com (aka Make) "scenario" that uses an OpenAI assitant to convert old written content into short blog post drafts, and emails them on for review.  Everything is managed through a single Google Sheet.
 
 ![Make.com automation](./figures/make_automation.png)
 
@@ -68,10 +68,7 @@ Make simply doesn't conform to my "first-principles" philosophy, so I started lo
 
 ## Introduction to Trigger.dev 
 
-Trigger.dev is much different than other popular automation tools.  For one thing, it's not no-code.  Instead of dragging, 
-dropping, and connecting blocks on a canvas, you implement workflows using their node library, and any other javascript/typescript other 
-code you need.  There aren't any pre-built integrations.  If you want to connect to an API, you add the dependencies and write the code 
-yourself.  It doesn't get more "first-principles" than that.  
+Trigger.dev is much different than other popular automation solutions.  Instead of connecting blocks on a canvas, you implement workflows using their node package and normal javascript.  You trigger the task from a separate application. There aren't any pre-built integrations.  If you want to connect to an API, you add the dependencies and write the code yourself.  
 
 If you aren't getting a UI, and you're aren't getting integrations, what are you getting?    
 
@@ -81,20 +78,18 @@ Like their website suggests, you're getting a serverless deployment solution whe
 
 > "Write workflows in normal async code and we'll handle the rest ..."
 
-They've figured out a cost-effective way to execute long-running tasks on the web, without worrying about timeouts.  Time-consuming calculations,
-multiple API calls, long-delays, and scheduling can all be expressed in code.  This opens up all sorts of possibilities that don't exist with other serverless computing options.  No Function as a Service (FaaS) that I know of, will successfully return after 15 minutes. Here's a list of popular options with their run-time limits:
+They've figured out a cost-effective way to containerize and execute long-running tasks on the web, without worrying about timeouts.  Time-consuming calculations,
+multiple API calls, long-delays, and complex scheduling can all be expressed in code.  This opens up all sorts of possibilities that would be extremely difficult to implement in other serverless computing options.  No Function as a Service (FaaS) that I know of, will successfully run for longer than 15 minutes. Here's a list of popular options with their run-time limits:
 
 * Digital Ocean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
 * Supabase Edge Functions: [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
 * Vercel Functions: [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
 * AWS Lambda Functions: [15 minutes](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
 
-So certain complex workflows probably can't be executed by a single function.  What if you distributed the work between several functions?  Sure, you 
-can do that, but this introduces more complexity.  Serverless functions can't be scheduled in code.  If you want to execute a function at some
+Based on these metrics, you won't be able implement an entire complex workflow in a single function.  What if you distributed the work between several functions?  Sure, you can do that, but this introduces more complexity.  Serverless functions can't be scheduled in code.  If you want to execute a function at some
 time in the future, you'll need to modify a configuration file or database.  And even if you manage to nail the scheduling, you'll probably need to bring in a task queue to store data between functions.  
 
 Trigger.dev handles all that extra complexity for you!
-
 
 ## What we're going to Build
 
@@ -123,7 +118,7 @@ After some research, here's what I came up with:
 
 ![carrer-advice-workflow](./figures/career-advice-flow.png)
   
-Changing the state of the dropdown from "Waiting" to "Get Jobs: triggers a Google Apps Script.  The script
+Changing the state of the dropdown from "Waiting" to "Get Jobs" triggers a Google Apps Script.  The script
 takes the data from that row and sends it to a Digital Ocean Serverless Function that's waiting for requests at a 
 particular URL.  The Digital Ocean Function does almost no work.  It's only purpose is to trigger a deployed Trigger.dev 
 task with the spreadsheet data.  Think of it as a webhook.  Inside the task, the payload is destructured and integrated into
@@ -135,16 +130,27 @@ extend the capabilities of this system later on, I'd rather get the right tools 
 
 ## Google Apps Scripts
 
-Google Apps Scripts let's you manipulate Google Workspace products in javascript.  
+Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in javascript.
+All you need to do is open up a Google Sheet, click the "Extensions" Tab in the top toolbar, and select "Apps Script".  This opens up an editor 
+that lets you implement and test your "container-bound" script, setup triggers, and add credentials.           
+
+For our career-advice system, we implemented a so-called "installable trigger".  With an "installable trigger", you write custom logic and attach it
+to a trigger through the Trigger Editor.  "Simple triggers" let you bypass the Trigger Editor, but we can't use them because we'll need to hit an API
+that requires authorization. 
+
+![apps-script-trigger-editor](./figures/apps-script-trigger-editor.png)
+
+Remember, we want to run the script when the "Trigger" dropdown transitions from "Waiting" to "Get Jobs.  This is a job for the "On Edit" trigger.  
+
+The last thing we need to do is find a way to store credentials without revealing them in the Apps Script.  Once we set it up, we'll need to store the URL and authorization token for our Digital Ocean function.  The simplest way to do this is adding the key and value as a script property, and retreve the value in the script when you needed.  Very similar to creating an `.env` file.  Script properties are accessible under the "Project Settings" tab. 
 
 ## Digital Ocean Serverless Functions
 
-They don't specifically cover Digital Ocean's serverless functions, so I decided to try that.  I like to keep things interesting.    
+The Trigger.dev website covers several ways of triggering tasks from web frameworks and serverless functions.  They don't discuss using Digital Ocean's Serverless Function product, so I decided to try that.  Maybe someone using Digital Ocean will find it useful.  
 
-Before doing anything, create a Digital Ocean account.  Once that's out of the way, we can start setting up our serverless function using 
-Digitial Ocean's command line interface - **doctl** .  
+We'll do everything with doctl, Digital Ocean's command line tool.  Instructions, including links to the official documentation are in my GitHub repository.    
 
-We could do a lot of the heavy lifting using Digital Ocean's control panel, but I prefer operating from the command line as much as possible.  Here are the instructions for getting doctl setup.  I tried to keep them short, and added help comments along the way.  If you want more details, each step starts with a link to Digital Ocean's documentation. 
+When you initialize a serverless function wih doctl, you get a configuration file, 3 nested folders, and a single javascript function.    
 
 With the setup out of the way, we can start customizing our Digital Ocean serverless project.  
 
