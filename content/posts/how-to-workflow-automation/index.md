@@ -1,9 +1,9 @@
 ---
-title: Using DigitalOcean Functions
+title: Workflow Automation with Trigger.dev
 author: Joey Reed
 date: 2024-12-20
 draft: true
-summary:      
+summary:  Improve Business Efficiency
 tags: ["automation"]
 ShowToc: true
 ---
@@ -118,13 +118,11 @@ With Trigger, we need to figure out a lot of the details ourselves:
 
 Here's what I came up with:
 
-![carrer-advice-workflow](./figures/career-advice-flow.png)
+![carrer-advice-workflow](./figures/career-advice-flow-trigger-api.png)
   
-Changing the dropdown state from "Waiting" to "Get Jobs" triggers a Google Apps Script.  The script packages up some information about the sheet and the edited row,  and sends it to a DigitalOcean Function sitting at a particular URL.  The DigitalOcean Function does almost no work.  It's only purpose is to initiate a Trigger task with the sheet data previously packaged up by the Apps Script.  Think of it as a webhook.  The Task, extracts the student's skills from the payload and adds it to an OpenAI chat prompt.  When OpenAI returns a valid response, the Task uses the Google Sheets API to update the Google Sheet remotely.
-
-Yes, this workflow is simple enough that the whole thing could be be put in one DigitalOcean Function.  But if I want to extend the capabilities of this system later on, I'd rather get the right tools in place now.     
-
-## Google Apps Scripts
+Changing the dropdown state from "Waiting" to "Get Jobs" triggers a Google Apps Script.  The script packages up some information about the sheet and the edited row,  and posts the payload to my task's URL endpoint.  Once triggered, the task extracts the student's skills from the payload and adds it to an OpenAI chat prompt.  When OpenAI returns with a valid response, the task uses the Google Sheets API to update the Google Sheet remotely.
+  
+## Setting up the Google Apps Script
 
 Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in Javascript.  To attach one to to Google Sheet, open up a Google Sheet, click the "Extensions" Tab in the top toolbar, and select "Apps Script".  This opens up an editor that lets you implement and test your "container-bound" script, setup triggers, and add credentials.           
 
@@ -139,40 +137,9 @@ whenever the "Trigger" column was edited.  To achieve this, I created an "instal
 
 This causes the function to execute anytime the spreadsheet is edited.  I added a little extra logic to avoid hitting the API when irrelevant cells were edited.   
 
-There are a few different ways to add credentials to an Apps Script without revealing them in the source code.  I decided to use the Script Properties construct found in "Project Settings".  Eventually, this will hold the URL and authorization token for my DigitalOcean Function.  Once saved, they can be accessed in the Apps Script in much the same way you access variabled in a `.env` file. 
+I also needed a way to store my Trigger credentials in the Apps Script project without revealing them in the source code.  One of the recommended approaches is adding them to the Script Properties key-value store available under the Script Properties tab.  Once they're stored, the credentials are accessible in the Apps Script through the `PropertiesService` class.
 
-
-## Configuring a DigitalOcean Function Project
-
-The Trigger website has several examples showing how to trigger tasks from other applications.  They don't talk about DigitalOcean's serverless function product, so I decided to try it out.  Maybe someone using DigitalOcean will find it useful.  
-
-I set everything up with doctl, DigitalOcean's command line tool.  Instructions, including links to the official documentation will be on my GitHub repository.
-
-Serverless function projects intialized with doctl generate a `project.yml` configuration file and a `packages/` directory.  The `packages/` directory contains everything for one "package" and one serverless function.  If you want more packages and/or more functions, just add more directories.  Chances are, you'll want to change the default package and function names.  No problem, just make sure that the new directory names match the package and function names in the `package.yml` file.  Otherwise your build will fail.  
-
-Here's the `project.yml` file for my project:
-
-![DigitalOcean project.yaml](./figures/digital-ocean-yaml.png)
-
-It contains one package called `career-package` and one function in that package called `skills-to-careers`.  When I started working
-on this, DigitalOcean only supported Node versions 14 and 18.  To minimize compatibility issues, I went with 18. 
-
-To be on the safe side, I maxed out the memory the function can access (1GB) and increased the timeout to 5 minutes.  Allocating this much memory to a function that does almost no work might seem a bit extreme.  For whatever reason though, during testing, executions occasionally failed because the function ran out of memory.  At least that's what the logs said.  Bumping it up fixed the issue.                        
-
-I also added a place holder for my Trigger credentials in the form of a "template variable".  That way I can add `project.yml` to my git repository without revealing sensitive information.  To finish this up, I created a `.env` file at the top-level of the project and added 
-
-```sh
-TRIGGER_SECRET_KEY=<add your secret key here>
-```
-Just make sure that you don't add `.env` to version control!  I'll discuss the `TRIGGER_SECRET_KEY` in the next section.
-
-DigitalOcean Functions use file-based routing, which means that the API route layout and the directory layout match.  Parameters submitted to a function's route are bundled with a bunch of http data, and passed as an object to the specified entry-point.  By default, the entry-point is a function named `main`.  If you need to change the entry-point for some reason, modify the function's `main` value in the `project.yml`.  I'm happy with `main` though.  The build process figures out which Javascript file contains the entry-point.  Moving forward, I'll call this the main function.   
-
-The `skills-to-careers` function will eventually need a few dependencies.  In preparation,  I turned the `skills-to-career` directory into an npm package by running `npm init -y`.  Because I don't like to mix source code with configuration files, I created a `src/` folder for all my Javascript files.  I moved the main function under `src/`, and made it the entry point for my npm package by adding it's relative path to the `main` section in `package.json`. 
-
-To be clear, there are two entry points to be aware of: the DigitalOcean Function's entry point, and the npm package entry point.  You'll get a runtime error if either of them are set incorrectly.
-
-## Adding Trigger
+## Creating the Trigger Project
 
 To use Trigger, you need to setup a Free account.  So far, I've been able to perform all my experiments without needing to upgrade to one of the paid tiers.
 
@@ -186,7 +153,7 @@ From the perspective of an automation freelancer or agency, this naming conventi
 I needed to create a task inside my DigitalOcean Function.  To do that, I navigated to the `skills-to-careers` folder and typed
 
 ```sh
-npx trigger.dev@latest init --javascript
+npx trigger.dev@latest init
 ```
 
 in the terminal.  This starts up a dialog that guides you through the project creation process: 
@@ -196,26 +163,6 @@ in the terminal.  This starts up a dialog that guides you through the project cr
 3. Creates a `trigger` folder with a sample task.
 4. Creates a configuration file. 
 
-
-### Why Javascript and not Typescript?
-
-If you poke around the Trigger.dev docs, you'll get the impression that there's a strong preference for Typescript over Javascript.  Unfortunately, getting this to work with DigitalOcean Function's [48MB upload limit](https://docs.digitalocean.com/products/functions/reference/build-process/#control-which-build-artifacts-are-installed) required an ugly hack.  
-
-The problem stems from how the DigitalOcean build process works.  According to the documentation, if a function folder has a `package.json` file with a `build` script, then `npm install` and `npm run build` runs.  On the other hand, if you don't have a `build` script, then `npm install --production` runs.  The key difference is
-
-* `npm install` adds production and development dependencies to `node_modules`.       
-* `npm install --production` doesn't add development dependencies to development dependencies.
-
-Unless I'm missing something, I need a `build` script to convert Typescript files to Javascript.  This has the unfortunate consequence of blowing past the 48MB upload size constraint.     
-
-My work around was manually switching between two `package.json` files; one for the DigitalOcean Function deployment, and the other for the Trigger deployment.    
-The `package.json` for the Trigger deployment was the original one with all the dependencies.  For the DigitalOcean deployment, I removed all Trigger-specific dependencies from the `package.json`.  This did the trick, but I don't like this solution.  
-
-Maybe I'll come up with something better, but until then, I'll stick with Javascript.  The workflow is so small, that I don't think Typescript is that beneficial anyway.    
-
-### Adding Dependencies 
-
-I added the OpenAI API and Google APIs Client as development dependencies, even though they are production dependencies as far as Trigger is concerned.  Why did I do this?  With Trigger, there isn't a difference between production and development dependencies.  They're all bundled together by default.  However, as the previous section explains, they won't be included in the DigitalOcean build.  And why should they, they aren't used in the main function at all.
 
 ### Adding Credentials
 
