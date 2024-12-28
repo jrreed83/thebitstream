@@ -212,9 +212,9 @@ Maybe I'll come up with something better, but until then, I'll stick with Javasc
 
 ### Adding Dependencies 
 
-I added the OpenAI API and Google APIs Client as development dependencies.  Trigger bundles all dependencies anyway, and they won't be installed during the DigitalOcean deployment.  
+I added the OpenAI API and Google APIs Client as development dependencies, even though they are production dependencies as far as Trigger is concerned.  Why did I do this?  With Trigger, there isn't a difference between production and development dependencies.  They're all bundled together by default.  However, as the previous section explains, they won't be included in the DigitalOcean build.  And why should they, they aren't used in the main function at all.
 
-## Deployment
+## Deployment and Finishing Up
 
 
 ## Conclusion
