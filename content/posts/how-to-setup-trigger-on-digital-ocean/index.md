@@ -68,7 +68,7 @@ Make simply doesn't conform to my "first-principles" philosophy, so I started lo
 
 ## Introduction to Trigger.dev 
 
-Trigger.dev is much different than other popular automation solutions.  Instead of connecting blocks on a canvas, you implement workflows using their node package and normal javascript.  You trigger the task from a separate application. There aren't any pre-built integrations.  If you want to connect to an API, you add the dependencies and write the code yourself.  
+Trigger.dev is much different than other popular automation solutions.  Instead of connecting blocks on a canvas, you implement workflows using their node package and normal Javascript.  You trigger the task from a separate application. There aren't any pre-built integrations.  If you want to connect to an API, you add the dependencies and write the code yourself.  
 
 If you aren't getting a UI, and you're aren't getting integrations, what are you getting?    
 
@@ -130,7 +130,7 @@ extend the capabilities of this system later on, I'd rather get the right tools 
 
 ## Google Apps Scripts
 
-Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in javascript.
+Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in Javascript.
 All you need to do is open up a Google Sheet, click the "Extensions" Tab in the top toolbar, and select "Apps Script".  This opens up an editor 
 that lets you implement and test your "container-bound" script, setup triggers, and add credentials.           
 
@@ -168,16 +168,53 @@ TRIGGER_SECRET_KEY=<add your secret key here>
 ```
 Just make sure that you don't add `.env` to version control!  The `TRIGGER_SECRET_KEY` will be discussed in the next section.
 
-DigitalOcean Functions use file-based routing, which means that the API routes match the directory layout.  Parameters submitted to a function's route are bundled with a bunch of http data, and passed as an object to the specified entry-point.  By default, the entry-point is a function named `main`.  If you need to change the entry-point for some reason, modify the function's `main` value in the `project.yml`.  I'm happy with `main` though.  The build process figures out which javascript file contains the entry-point.  I'll call this the main function.   
+DigitalOcean Functions use file-based routing, which means that the API routes match the directory layout.  Parameters submitted to a function's route are bundled with a bunch of http data, and passed as an object to the specified entry-point.  By default, the entry-point is a function named `main`.  If you need to change the entry-point for some reason, modify the function's `main` value in the `project.yml`.  I'm happy with `main` though.  The build process figures out which Javascript file contains the entry-point.  Moving forward, I'll call this the main function.   
 
-The `skills-to-careers` function will need a few dependencies.  To prepare, I turned the `skills-to-caeer` directory into an npm package with an `npm init -y`.  Because I don't like source code and configuration files to be mixed together, I created a `src\` folder for all my javascript files.  I moved the main function under `src\`, and made it the entry point for my npm package.
+The `skills-to-careers` function will need a few dependencies.  To prepare, I turned the `skills-to-career` directory into an npm package with an `npm init -y`.  Because I don't like source code and configuration files to be mixed together, I created a `src/` folder for all my Javascript files.  I moved the main function under `src/`, and made it the entry point for my npm package.
 
 To be clear, there are two entry points: an entry point for the DigitalOcean Function, and an entry point for the npm package.  If you don't have both properly set, the serverless function will deploy but not work.
 
 ## Adding Trigger.dev
 
-To use Trigger.dev, you need to setup an account.  
+To use Trigger.dev, you first need to setup a Free account.  So far, I've been able to perform all my experiments without upgrading to one of the paid tiers.
+
+The most important concept in Trigger.dev is the task.  You can think of a task as a special asynchronous function.  Every task gets attached to an Organization and Project that you first create in your Trigger.dev dashboard. 
+
+I needed to create a Javascript-based task inside my DigitalOcean Function.  To do that, I navigated to the `skills-to-careers` folder and typed
+
+```sh
+npx trigger.dev@latest init --javascript
+```
+
+in the terminal.  This starts up a dialog that guides you through the project creation process: 
+
+1. Asks you to select a project you created in the Dashboard. 
+2. Installs the SDK and any other npm dependencies.
+3. Creates a `trigger` folder with a sample task.
+4. Creates a configuration file. 
+
+
+### Why Javascript and not Typescript?
+
+If you poke around the Trigger.dev docs, you'll get the impression that there's a strong preference for Typescript over Javascript.  Unfortunately, getting this to work with DigitalOcean Function's [48MB upload limit](https://docs.digitalocean.com/products/functions/reference/build-process/#control-which-build-artifacts-are-installed) required an ugly hack.  
+
+The problem stems from how the DigitalOcean build process works.  According to the documentation, if a function folder has a `package.json` file with a `build` script, then `npm install` and `npm run build` runs.  On the other hand, if you don't have a `build` script, then `npm install --production` runs.  The key difference is
+
+* `npm install` adds production and development dependencies to `node_modules`.       
+* `npm install --production` doesn't add development dependencies to development dependencies.
+
+Unless I'm missing something, I need a `build` script to convert Typescript files to Javascript.  This has the unfortunate consequence of blowing past the 48MB upload size constraint.     
+
+My work around was manually switching between two `package.json` files; one for the DigitalOcean Function deployment, and the other for the Trigger deployment.    
+The `package.json` for the Trigger deployment was the original one with all the dependencies.  For the DigitalOcean deployment, I removed all Trigger-specific dependencies from the `package.json`.  This did the trick, but I don't like this solution.  
+
+Maybe I'll come up with something better, but until then, I'll stick with Javascript.  The workflow is so small, that I don't think Typescript is that beneficial anyway.    
+
+### Adding Dependencies 
+
+I added the OpenAI API and Google APIs Client as development dependencies.  Trigger bundles all dependencies anyway, and they won't be installed during the DigitalOcean deployment.  
 
 ## Deployment
+
 
 ## Conclusion
