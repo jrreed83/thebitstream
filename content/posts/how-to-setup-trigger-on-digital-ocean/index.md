@@ -3,7 +3,7 @@ title: Workflow Automation with Trigger.dev
 author: Joey Reed
 date: 2024-12-20
 draft: true
-summary:     
+summary:      
 tags: ["automation"]
 ShowToc: true
 ---
@@ -20,7 +20,7 @@ popular automation products, [zapier](https://zapier.com):
 * Lead Management
 * Revops 
 
-Even with no programming experience, people are able to build amazingly sophisticated software systems that have a major impact on their business's bottom line. 
+Even with no programming experience, people are able to build amazingly sophisticated and useful software systems that have a major impact on their business's bottom line. 
 
 Over the course of my career, I've used many different software products.  Not one has helped me automate a business task.  Sounds pretty good to me.  I want to spend my time doing what I get paid to do - engineering.  If these tools can help me codify and reduce the time I spend on some business process, then I figure it's worth learning more about them.    
 
@@ -176,8 +176,11 @@ To be clear, there are two entry points to be aware of: the DigitalOcean Functio
 
 To use Trigger, you need to setup a Free account.  So far, I've been able to perform all my experiments without needing to upgrade to one of the paid tiers.
 
-The most important concept in Trigger.dev is the task, which is ultimately a special asynchronous Javascript function.  Every task gets attached to an "Project" belonging to an "Organization".  Organizations and Projects must be created in the Trigger dashboard before tasks can be attached.
+Tasks are the most important concept in Trigger.  A Task is a clevery engineered object that get bundled and shipped to infrastructure that can run Docker containers.  Task behavior is controlled by several life-cycle methods.  Most, if not all, of the custom logic describing a workflow is added to the asynchronous `run` life-cycle method.          
 
+Individual Tasks gets attached to Projects under Organizations.  Organizations and Projects must be created in the Trigger dashboard before tasks can be attached.  You can create as many Organizations, Projects, and Tasks as you want.  Even under the free account!  
+
+From the perspective of an automation freelancer or agency, this naming convention makes sense.  If you're good at it, you'll likely have multiple projects with multiple clients (aka Organizations) running at the same time.  
 
 
 I needed to create a task inside my DigitalOcean Function.  To do that, I navigated to the `skills-to-careers` folder and typed
