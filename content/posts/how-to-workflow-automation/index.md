@@ -8,13 +8,13 @@ tags: ["automation"]
 ShowToc: true
 ---
 
-How can small businesses use modern technology to improve ...  
+How can small businesses leverage modern technology platforms to boost productivity and amplify it's.  
 
-I started investigating this question a couple months ago.  One of the trends that came up consistently in my research was the use of generative AI and "workflow automation tools" to automate critical, but repetitive, business tasks.  Here's a list of some use cases taken straight from the landing page for one of the most
+I started investigating this question a couple months ago.  One of the trends that came up consistently in my research was the use of generative AI and "workflow automation tools" to automate critical business tasks.  Here's a list of some use cases taken straight from the landing page for one of the most
 popular automation products, [zapier](https://zapier.com):
 
 * Sales handoffs
-* Markeing campagins
+* Marketing campagins
 * Data management
 * IT helpdesk
 * Lead Management
@@ -22,7 +22,7 @@ popular automation products, [zapier](https://zapier.com):
 
 Even with no programming experience, people are able to build amazingly sophisticated and useful software systems that have a major impact on their business's bottom line. 
 
-Over the course of my career, I've used many different software products.  Not one has helped me automate a business task.  Sounds pretty good to me.  I want to spend my time doing what I get paid to do - engineering.  If these tools can help me codify and reduce the time I spend on some business process, then I figure it's worth learning more about them.    
+Over the course of my career, I've used many different software products.  Not one has helped me with a business task.  This started sounding pretty appealing.  I want to spend my time doing what I get paid to do - engineering.  If these tools can help me codify and reduce the time I spend on some business process, then it's worth giving them a try.
 
 ## What We'll Cover
 
@@ -52,11 +52,13 @@ Obviously this is great for someone with a product idea but doesn't have the dev
 
 ## Experimenting with make.com (aka Make)
 
-In Make, workflows are called "scenarios".  As an experiment, I built a simple scenario that uses an OpenAI assitant to convert old written content into short blog post drafts, and emails them on for review.  Everything is managed through a single Google Sheet.  Here's what the scenario looks like in the Make dashboard:
+In Make, workflows are called "scenarios".  For my first foray into automation, I built a simple scenario that uses an OpenAI assitant to convert old written content into short blog post drafts, and emails them on for review.  Everything is managed through a single Google Sheet.  Here's what the scenario looks like in the Make dashboard:
 
 ![Make.com automation](./figures/make_automation.png)
 
 Implementing this was very easy.  The most tedious part was setting up my Google credentials.  Even that wasn't hard, just unfamiliar.  You end up having to access your Google Cloud account, which I hadn't done before.
+
+### Why No-Code is not my Ideal Choice 
 
 I have nothing bad to say about Make.  It's a fantastic service, it's just not the right tool for me.  I prefer programming over working a user interface, no matter how great it is.  Programming takes more work, but in return you get more power, more flexibility, and more independence.  
 
@@ -64,20 +66,19 @@ This last point is particulary important to me.  As an electrical engineer,  it'
 
 Make simply doesn't conform to my "first-principles" philosophy, so I started looking into alternatives.  I was planning on giving n8n a try for several reasons, but then I came across [Trigger.dev](https://trigger.dev/).    
 
-## Introduction to Trigger.dev (aka Trigger)
+## Introduction to Trigger
 
 Trigger is much different than other popular automation solutions.  
 
 * Instead of connecting blocks on a canvas, workflows are implemented by adding normal Typescript/Javascript to their carefully engineered "task" object.
-* Integrations aren't included.  If your task needs to communicate with an API, you need to being in the appropriate dependencies and write the code yourself. 
-* General webhooks aren't included.  Tasks can be executed from Trigger's dashboard, with their Node SDK, or their REST API.  
+* Integrations aren't included.  If you need to communicate with an API,  you need to add the appropriate dependencies and write the code yourself.   
 * It's implemented as a serverless architecture.
 
 If you aren't getting drag-and-drop functionality, and you're aren't getting built-in integrations, what are you getting?    
 
 ![trigger.dev home](./figures/trigger-dot-dev-home-annotated.png)
 
-Like their website suggests, you're getting a serverless deployment solution where you
+Like their website suggests, you're getting a deployment solution where you
 
 > "Write workflows in normal async code and we'll handle the rest ..."
 
@@ -92,6 +93,7 @@ multiple API calls, long-delays, and complex scheduling can all be expressed in 
 There are cetainly workflows that could take longer than 15 minutes.  For example, you might want to schedule a workflow to execute every day at 8:45am.  You can do this with serverless functions, but you'll be forced to either add the schedule to a database or a configuration file.  You can't do it in code.  
 
 Other applications might force you to distribute the work you'd like to do in one serverless function, over several of them.  Now you'll probably have to bring in a task queue, or some other way to manage state between function calls.  This introduces a lot of complexity that you may not have the time, or expertise, to deal with.  Trigger.dev handles all the extra complexity for you!
+ 
 
 ## What we're going to Build
 
@@ -120,58 +122,122 @@ Here's what I came up with:
 
 ![carrer-advice-workflow](./figures/career-advice-flow-trigger-api.png)
   
-Changing the dropdown state from "Waiting" to "Get Jobs" triggers a Google Apps Script.  The script packages up some information about the sheet and the edited row,  and posts the payload to my task's URL endpoint.  Once triggered, the task extracts the student's skills from the payload and adds it to an OpenAI chat prompt.  When OpenAI returns with a valid response, the task uses the Google Sheets API to update the Google Sheet remotely.
+Changing the state of a studen't dropdown from "Waiting" to "Get Jobs" triggers a Google Apps Script.  The script packages up some details about the sheet including the
+
+* Sheet ID
+* Sheet name
+* Row and column the career advice will go
+* Student details
+
+and posts it to the task's API URL.  When the running task receives the payload, it extracts the student's skills from the payload and adds it to an OpenAI chat prompt.  When the OpenAI API returns with a valid response, the task uses the Google Sheets API to add career advice to the cell described by the Apps Script original POST request. 
   
 ## Setting up the Google Apps Script
 
-Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in Javascript.  To attach one to to Google Sheet, open up a Google Sheet, click the "Extensions" Tab in the top toolbar, and select "Apps Script".  This opens up an editor that lets you implement and test your "container-bound" script, setup triggers, and add credentials.           
+Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in Javascript.  To attach one to a Google Sheet, open up a Google Sheet, click the "Extensions" Tab in the top toolbar, and select "Apps Script".  This opens up an editor that lets you implement and test your "container-bound" script, setup triggers, and add credentials.           
 
 I wanted the Google Apps Script to
 
 1. Retrieve information about the sheet
-2. Forward the sheet information to an API
+2. POST the information to to my Trigger tasks's API URL
 
-whenever the "Trigger" column was edited.  To achieve this, I created an "installable trigger" by attaching the "On Edit" event to my primary function.  
+whenever the "Trigger" column was edited.  Because the Trigger API requires an authorization header, I used an "installable trigger".  With an installable trigger you use the editor to manually attach an event to the function you want to run, when that event occurs.  It's just like a callback.
 
 ![apps-script-trigger-editor](./figures/apps-script-trigger-editor.png)
 
-This causes the function to execute anytime the spreadsheet is edited.  I added a little extra logic to avoid hitting the API when irrelevant cells were edited.   
+The "On Edit" event is the right choice for this application.  To avoid hitting the API when irrelevant cells were modified, I added a little extra logic.
 
 I also needed a way to store my Trigger credentials in the Apps Script project without revealing them in the source code.  One of the recommended approaches is adding them to the Script Properties key-value store available under the Script Properties tab.  Once they're stored, the credentials are accessible in the Apps Script through the `PropertiesService` class.
 
-## Creating the Trigger Project
+## Creating a Trigger Project
 
-To use Trigger, you need to setup a Free account.  So far, I've been able to perform all my experiments without needing to upgrade to one of the paid tiers.
+Start by setting up a free Trigger account. Chances are, you won't need one of the paid tiers right away, unless you're building something really ambitious.  
 
-Tasks are the most important concept in Trigger.  A Task is a clevery engineered object that get bundled and shipped to infrastructure that can run Docker containers.  Different life-cycle methods are used to control different aspects of a Task's behavior.  Most, if not all, of the custom logic describing a workflow is added to the asynchronous `run` life-cycle method.          
+The Free tier gives you access to as many tasks, projects, and organizations as you want.  It's pretty clear what a task is.  Organizations and projects are account mechanisms, added through the Dashboard, to keep track of your tasks.  They help keep your dashboard clean and tidy.  Every Trigger codebase must be attached to a project created under an organization.  
 
-Individual Tasks gets attached to Projects under Organizations.  Organizations and Projects must be created in the Trigger dashboard before tasks can be attached.  You can create as many Organizations, Projects, and Tasks as you want.  Even under the free account!  
+### Creating an Orgaization and Project 
 
-From the perspective of an automation freelancer or agency, this naming convention makes sense.  You'll likely have multiple projects with multiple clients (aka Organizations) running at the same time.  
+Before initializing my Trigger codebase, I created an organization called "Career Assistant" and a project called "google-sheets-workflow".  You can delete organizations and rename project names, but you can't delete projects.      
 
+### Initializing the Codebase 
 
-I needed to create a task inside my DigitalOcean Function.  To do that, I navigated to the `skills-to-careers` folder and typed
+First, I initialized an npm package and adding the OpenAI API and Google APIs Client as dependencies:  
 
 ```sh
-npx trigger.dev@latest init
+mkdir my-trigger-project
+cd my-trigger-project
+npm init -y
+npm install openai googleapis
+```  
+
+Once the dependencies were installed, I added Trigger by running the CLI initialization command:
+
+```sh
+npx trigger.dev@latest init 
 ```
 
-in the terminal.  This starts up a dialog that guides you through the project creation process: 
+No need to install their CLI tool - `npx` handles everything for you.  
 
-1. Asks you to select a project you created in the Dashboard. 
+This starts up a dialog that helps scaffold out a project:  
+
+1. Asks you which Trigger project you want to attach your future tasks to.
+
 2. Installs the SDK and any other npm dependencies.
-3. Creates a `trigger` folder with a sample task.
-4. Creates a configuration file. 
 
+3. [Optional] Creates `src/trigger` directory with sample task
+
+4. Creates a `trigger.config.ts` configuration file. 
+
+The configuration contains the autogenerated project ID associated with the project and organization previously set up.   
 
 ### Adding Credentials
 
-Each project has an independent set of environment variables that are accessible from the "Environment variables" tab.  This is where you want to store API keys, authorization credentials, and any other data you don't want to necessarily reveal in your task source code.  From inside your task, you access them like you would any other environment variable, with `process.env[NAME_OF_VAR]`.  
+Each project has its set of environment variables for storing API credentials and other sensitive data you don't want to reveal in source code.  You add them under the "Environment variables" tab as key/value pairs.  They're accessed in your source code like environment variables in any other Node project, with `process.env`.  
 
-I added my OpenAI API key and the Base64 encoding of my Google Service Account JWT to my project's environment variables.  Part of the task source code converts the Base64 encoding back to JSON for subsequent authorization.  This idea came straight from the Trigger documentation.      
+I needed to add two sets of credentials:
+
+* OpenAI API key 
+* Google Service Account JSON Web Token (JWT)
+
+Creating a Google Service Account was only necessary because I wanted to update the Google Sheet through the API.  If I only wanted to read data from the Sheet, I could have gotten away with setting up API Key.  
+
+Unlike the OpenAI API Key, the Google JWT is a JSON file you download after creating the service account.  It wasn't immediately obvious how to store this as an environment variable  Fortunately, Trigger's website has a straight forward [solution](https://trigger.dev/docs/deploy-environment-variables#using-google-credential-json-files).  They recommend adding the Base64 encoding of the JWT as your Google credential.  Then, in your task code, decode the Base64 encoding back to a Javascript object and pass it to the function responsbile for authorization. 
+
+### Organizing Tasks 
+
+My workflow was simple enough that I could have implemented it in a single task.  I thought about it, and decided that it might be better if I split the workload into 2 separate tasks (an OpenAI task and a Google Sheets task) so I could test each task individually.  So that's what I did.  Here's the "root" task that
+encapsulates my `openai_task` and `google_sheets_task`:  
+
+```js
+export const career_advice_task = task({
+  id: "career-advice",
+
+  run: async function (payload: any, { ctx }) {
+
+    // Just Grab the response
+    let chatResponse = await openai_task.triggerAndWait( payload ).unwrap();
+    
+    console.log(`career_advice_task: ${chatResponse}`);
+
+    await google_sheets_task.triggerAndWait({
+      ...payload,
+      chatResponse
+    });
+
+    return {
+      message: "Done With Career Advice"
+    }
+  }
+});
+```
+
+The `.triggerAndWait` method invoked on both subtasks executes them asynchronously and returns an object containing the output of the task, along with 
+some extra metadata.  Adding `.unwrap()`, strips away the metadata and only keeps the task's return value.  In this case, I'm keeping OpenAI's chat completion, because that's what the OpenAI task returns and it's the missing piece I needed to send back to the Google Sheet.  The root task ends after the Google Sheets task successfully updates the Google Sheet.  I'm including the original payload in this task call because it includes information about what spreadsheet (sheet Id), sheet (sheet name), and cell the career advice content should go. 
 
 
-## Deployment and Finishing Up
+### Deployment
+
+
+## Deployment
 
 1. Deploy trigger
 2. Add TRIGGER_SECRET_KEY
@@ -179,3 +245,5 @@ I added my OpenAI API key and the Base64 encoding of my Google Service Account J
 4. Add URL to Google Apps Script.  
 
 ## Conclusion
+
+This post was was an introduction to the world of workflow automation.  I   
