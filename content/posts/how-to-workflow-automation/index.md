@@ -10,7 +10,7 @@ ShowToc: true
 
 How can small businesses leverage modern technology to boost productivity and amplify market reach?
 
-I started investigating this question a couple months ago.  One of the trends that came up consistently in my research was the use of generative AI and "workflow automation tools" to automate critical business tasks.  Here's a list of some use cases taken straight from the landing page for one of the most
+I started investigating this question a couple months ago.  One of the trends that came up consistently in my research was the use of large language models (LLMs) and "workflow automation tools" to automate critical business tasks.  Here's a list of some use cases taken straight from the landing page for one of the most
 popular automation products, [zapier](https://zapier.com):
 
 * Sales handoffs
@@ -387,28 +387,83 @@ export const openai_task = task({
 });
 ```
 
-For simplicity, I'm honestly thinking of getting rid of the API-specific libraries and just using Node's built in `fetch` API.  Besides reducing the number of dependencies (always a good thing if you can manage it), it will also make my code more flexible.  Like I said earlier, I'd eventually like to use LLMs from organizations other than OpenAI.  While many of them top companies offer OpenAI-compliant APIs,  I don't want to necessarily rely on that continuing indefinitely.  
+For simplicity, I'm honestly thinking of getting rid of the API-specific libraries and just using Node's built in `fetch` API.  Besides reducing the number of dependencies (always a good thing if you can manage it), it will also make my code more flexible.  Like I said earlier, I'd eventually like to use LLMs from organizations other than OpenAI.  While many of them offer OpenAI-compliant APIs,  I don't want to necessarily rely on that continuing indefinitely.  
 
 
 ### Deployment
 
-The Free tier offers Development and Production environments for projects.  The development environment lets you build and run your tasks locally before deploying them to a hosted service.  It can come in handy, but I went straight for production.  Here's how you do it:
+The Free tier offers Development and Production environments for projects.  The Dev environment lets you build and run your tasks locally before deploying them to hosted infrasturcture.  It can come in handy, but I went straight for production.  All you need to do is go to the directory with the `trigger.config.ts` file and type
 
 ```sh 
 npx trigger.dev@latest deploy
 ```
 
-After a few minutes, you'll see your deployed tasks in the Dashboard.  From there, you can test each task individually with custom payloads:
+After a few minutes, you'll see your deployed tasks in the Dashboard.  From there, you can test each task individually with custom JSON payloads:
 
 ![Task tests](./figures/test-tasks.png)
 
-
-If you find a bug, no big deal.  Just fix it and deploy again. 
+If you find a bug, no big deal.  Just fix it and deploy again.   
 
 ## Finishing Up
 
-Working on it.
+The last thing I had to do was to store my Trigger API credentials in my Apps Script Script Properties.  This was simply a matter of going to the "API Keys" page in the Trigger dashboard, copying the production credentials, and pasting them in Script Properties.
+
+![trigger api key](./figures/trigger-api-key.png)
+
+Then it's just a matter of hitting the `trigger` API route in the Apps Script code.  Here's what that looks like:
+
+1. **Build the payload**
+
+```js
+const payload = {
+    payload: {
+        row:  activeRow,
+        studentName: vals[0],
+        age:  vals[1],
+        skills:  vals[2],
+        targetCell: targetCell,
+        sheetName: studentSheetName,
+        sheetId: sheetId,
+        systemPrompt: systemPrompt,
+        userPrompt: vals[2],
+        model: model,
+        apiURL: apiURL
+    }
+};
+```
+The object posted to the API can include different configuration options, context information, and a payload intended for the root task.  I only need the 
+payload.
+
+2. **Build the options object** 
+
+```js
+const options = {
+    method: 'POST',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    headers: {
+        "Authorization": `Bearer ${getScriptSecret("TRIGGER_SECRET_KEY")}`
+    }
+};
+```
+
+This is the same sort of code you'd write when using a normal Javascript `fetch` request. 
+
+3. **Make the request synchronously**
+
+```js
+const obj = UrlFetchApp.fetch(
+    `https://api.trigger.dev/api/v1/tasks/${getScriptSecret("TRIGGER_ROOT_TASK_NAME")}/trigger`,
+    options
+);
+```
+
+As far as I know, Apps Scripts can't make asynchronous requests, and there are limitations on how long this synchronous function call can take.  Fortunately,
+this Trigger API call responds right away with the run ID after a few seconds.
 
 ## Conclusion
 
-Working on it.
+With the technology available today, anyone, regardless of technical expertise, can build incredibly powerful software systems.  All you need is the time and willingness to learn. 
+
+I for one learned a lot about workflow automation, Javascript, and interacting with LLMs while preparing this article.  Hopefully you got something out of it too.  Trigger.dev is an amazingly simple, power, and flexible platform.  They're really onto something. 
+
