@@ -131,7 +131,40 @@ Changing the state of a studen't dropdown from "Waiting" to "Get Jobs" triggers 
 
 and posts it to the task's API URL.  When the running task receives the payload, it extracts the student's skills from the payload and adds it to an OpenAI chat prompt.  When the OpenAI API returns with a valid response, the task uses the Google Sheets API to add career advice to the cell described by the Apps Script original POST request. 
   
-## Setting up the Google Apps Script
+## Setting up API Credentials
+
+### OpenAI
+
+Getting an OpenAI API Key is extremely simple:
+
+1. Sign into your account.
+2. Click the "API Keys" tab on the left side of your dashboard
+3. Press the "Create new secret key" button.
+4. Give the API Key a name, permissions, and connect it to a project.
+5. Copy the API key and keep in somewhere safe.  You won't be able to get access to it again, though you can always create a new one. 
+
+
+### Google 
+
+Setting up Google credentials is pretty annoying.  The first few steps aren't so bad, I just think the interface is very convoluted.  
+
+1. Sign into Google Cloud Platform with your Google account.
+2. Create a project.      
+3. Navigate to the API Library page and enable the Google Sheets API.
+
+Now you need to set up something called a user managed service account.  Apparently it's too dangeous to let me use an API Key to update my own Google Sheet; whatever.  A service account is used to execute a process, like make API requests, on your behalf.
+
+1. Go to the APIs and Services Tab.
+2. Select the Credentials Tab.
+3. Click the "Manage service accounts" link above above the "Service Accounts" listing.
+4. Press the "Create Service Account" button toward the top of the Service Accounts window.
+5. Give the service account a name and an ID.  Press the "Create and Continut" button.
+6. Select the "Editor" role for this project.  Press the "Continue" button.
+7. You don't need to grant users access to the account.  Press the "Done" button.
+
+
+
+## Getting Started with Google Apps Script
 
 Google Apps Scripts let you interact with Google Workspace products, like Google Sheets and Google Documents, in Javascript.  To attach one to a Google Sheet, open up a Google Sheet, click the "Extensions" Tab in the top toolbar, and select "Apps Script".  This opens up an editor that lets you implement and test your "container-bound" script, setup triggers, and add credentials.           
 
@@ -205,7 +238,7 @@ Unlike the OpenAI API Key, the Google JWT is a JSON file you download after crea
 ### Organizing Tasks 
 
 My workflow was simple enough that I could have implemented it in a single task.  I thought about it, and decided that it might be better if I split the workload into 2 separate tasks (an OpenAI task and a Google Sheets task) so I could test each task individually.  So that's what I did.  Here's the "root" task that
-encapsulates my `openai_task` and `google_sheets_task`:  
+invokes the `openai_task` and `google_sheets_task`:  
 
 ```js
 export const career_advice_task = task({
@@ -215,13 +248,13 @@ export const career_advice_task = task({
 
     // Just Grab the response
     let chatResponse = await openai_task.triggerAndWait( payload ).unwrap();
-    
-    console.log(`career_advice_task: ${chatResponse}`);
 
-    await google_sheets_task.triggerAndWait({
+    let googleResponse = await google_sheets_task.triggerAndWait({
       ...payload,
       chatResponse
-    });
+    })
+
+    logger.info("response from Google Sheets Task", googleResponse);
 
     return {
       message: "Done With Career Advice"
@@ -229,20 +262,17 @@ export const career_advice_task = task({
   }
 });
 ```
+Calling `triggerAndWait` is the recommended way to invoke a task when you want to use the output for something; like passing it to another task.  It starts the task, waits until it finishes,  and returns an object containing the task output, the completed run id, the task id, that a status flag.  The extra `unwrap` method call on the OpenAI task pulls out `output` from `triggerAndWait`s result object. Here's an example of what the result object returned by the Google task looks like in Trigger's logs:  
 
-The `.triggerAndWait` method invoked on both subtasks executes them asynchronously and returns an object containing the output of the task, along with 
-some extra metadata.  Adding `.unwrap()`, strips away the metadata and only keeps the task's return value.  In this case, I'm keeping OpenAI's chat completion, because that's what the OpenAI task returns and it's the missing piece I needed to send back to the Google Sheet.  The root task ends after the Google Sheets task successfully updates the Google Sheet.  I'm including the original payload in this task call because it includes information about what spreadsheet (sheet Id), sheet (sheet name), and cell the career advice content should go. 
+![triggerAndWait result object](./figures/triggerAndWait-log.png)
 
 
 ### Deployment
 
 
-## Deployment
+## Finishing Up
 
-1. Deploy trigger
-2. Add TRIGGER_SECRET_KEY
-3. Deploy DigitalOcean
-4. Add URL to Google Apps Script.  
+The last thing I needed to do was paste my Trigger credentials in the 
 
 ## Conclusion
 
