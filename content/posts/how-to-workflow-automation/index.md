@@ -24,9 +24,9 @@ Even with no programming experience, people are able to build amazingly sophisti
 
 Over the course of my career, I've used many different software products.  Not one has helped me with a business task.  This started sounding pretty appealing.  I want to spend my time doing what I get paid to do - engineering.  If these tools can help me codify and reduce the time I spend on some business process, then it's worth giving them a try.
 
-## What We'll Cover
+## What I'll Cover
 
-In this post we're going to 
+In this post I'm going to 
 
 1. describe what workflow automation is,
 2. discuss why "no-code" platforms may not be the right choice,
@@ -34,7 +34,7 @@ In this post we're going to
 
 After that, I'll describe how I used Trigger.dev, Google Sheets, and an LLM to build a proof-of-concept career advice system.
 
-## What is a Workflow Automation Tool
+## Introduction to Workflow Automation
 
 Workflow automation tools empower you build software systems by combining third-party APIs.  The most popular ones, like
 
@@ -82,21 +82,21 @@ Like their website says, you're getting an optimized deployment experience where
 > "Write workflows in normal async code and we'll handle the rest ..."
 
 They've figured out a cost-effective way to package and execute long running tasks on the web, without worrying about timeouts.  Time-consuming calculations,
-multiple API calls, long-delays, and complex scheduling can all be expressed in code.  This opens up all sorts of possibilities that would be extremely tricky to implement with other serverless computing options.  No Function as a Service (FaaS) that I know of, will successfully run after 15 minutes. Here's a list of popular options with their run-time limits:
+multiple API calls, long-delays, and complex scheduling can all be expressed in a single serverless function.  This opens up all sorts of possibilities that would be extremely tricky to implement with other serverless computing options.  No Function as a Service (FaaS) that I know of, will successfully run after 15 minutes. Here's a list of popular options with their run-time limits:
 
 * DigitalOcean Function: [15 minutes](https://docs.digitalocean.com/products/functions/details/limits/)
 * Supabase Edge Functions: [150s-400s](https://supabase.com/docs/guides/functions/limits#runtime-limits)
 * Vercel Functions: [15 minutes](https://vercel.com/docs/functions/runtimes#max-duration)
 * AWS Lambda Functions: [15 minutes](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)
 
-There are cetainly systems you might want to design that could take longer than 15 minutes.  For example, you might want to schedule a workflow to execute every day at 8:45am.  You can do this with serverless functions, but you'll be forced to either add the schedule to a database or a configuration file.  You can't do it in code.  With Trigger you can!  
+There are cetainly systems you might want to design that could take longer than 15 minutes.  For example, you might want to schedule a workflow to execute every day at 8:45am.  You can do this with the other serverless function providers, but you're forced to either add the schedule to a database or a configuration file.  You can't express it directly in your function's source code.  With Trigger you can!  
 
 To get around the timeout constraint, you might be forced to distribute the work you'd like to do in one serverless function, over several.  Now you'll probably have to bring in a task queue, or some other way to manage state between function calls.  This introduces a lot of complexity that you may not have the time, or expertise, to deal with.  Trigger.dev handles all the extra complexity for you!
  
 
-## What we're going to Build
+## What I Built
 
-We're going to build a proof-of-concept system that offers career advice to students based on information stored in a Google Sheet. 
+I built a proof-of-concept system that offers career advice to students based on information stored in a Google Sheet. The code, minus the Google Sheet, can be found on my [GitHub](https://github.com/jrreed83/career-advice-workflow-automation/).
 
 ![spreadsheet](./figures/spreadsheet.png)
 
@@ -148,7 +148,7 @@ More details, including some of the source code, will be shown later.
 
 Credentials need to be created for every service your automation needs.  For me that means OpenAI and Google.  This is probably the least exciting part of this post, but if you want your system to work, you've got to grind through it anyway.  
 
-I was thinking about sprinkling in screenshots to help with the instructions, but obviously didn't.  If you follow them step-by-step through, you should be in good shape.   
+I was thinking about sprinkling in screenshots to help with the instructions, but obviously didn't.  However, if you follow the procedure step-by-step, you should be in good shape.   
 
 ### OpenAI
 
@@ -201,11 +201,11 @@ I needed to write a Google Apps Script that
 1. gets information about the sheet including cell values and sheet names, and
 2. sends the information to the Trigger API
 
-whenever the "Action" column transitions to "Get Jobs".  Because the Trigger API requires an authorization header, I used an "installable trigger".  With an installable trigger you manually attach an event to the function you want to run, when that event occurs.  It's just like a callback.
+whenever the "Trigger" column transitions to "Get Jobs".  Because the Trigger API requires an authorization header, I used an "installable trigger".  With an installable trigger you manually attach an event to the function you want to run, when that event occurs.  It's just like a callback.
 
 ![apps-script-trigger-editor](./figures/apps-script-trigger-editor.png)
 
-The "On Edit" event is the right choice for this application.  To avoid hitting the API when irrelevant cells were modified, I added some extra logic.
+The "On Edit" event is the right choice for this application.  I added some extra logic To avoid hitting the API when irrelevant cells were modified.
 
 I also needed a way to store my Trigger credentials in the Apps Script project without revealing them in the source code.  One of the recommended approaches is adding them to the Script Properties key-value datastore.  Once stored, the credentials are accessible in the Apps Script through the `PropertiesService` class.
 
@@ -257,11 +257,13 @@ Each project has its set of environment variables to store API credentials and o
 
 I added my OpenAI API key and my Google Service Account JWT. 
 
-It wasn't immediately obvious how to store the JWT.  Fortunately, Trigger's website has a straight forward [solution](https://trigger.dev/docs/deploy-environment-variables#using-google-credential-json-files).  They recommend base64 encoding the JWT, and storing that as your Google credential.  Here's what that looks like in bash (assuming the JWT is called `google-jwt.json`:
+It wasn't immediately obvious how to store the JWT.  After all, it's a file, not an ID.  Fortunately, Trigger's website has a straight forward [solution](https://trigger.dev/docs/deploy-environment-variables#using-google-credential-json-files).  They recommend base64 encoding the JWT, and storing that as your Google credential.  Here's what that looks like in bash (assuming the JWT is called `google-jwt.json`):
 
 ```sh 
 base64 google-jwt.json -w 0
 ```
+
+The `-w 0` disables line wrapping.
 
 You'll want to convert the base64 encoded string back to a Javascript object in your task code:
 
@@ -413,15 +415,15 @@ After a few minutes, you'll see your deployed tasks in the Dashboard.  From ther
 
 ![Task tests](./figures/test-tasks.png)
 
-If you find a bug, no big deal.  Just fix it and deploy again.   
+If you find a bug, no big deal.  Just fix it and redeploy.   
 
 ## Finishing Up
 
-The last thing I had to do was put my Trigger credentials in my Apps Script, Script Properties.  This was simply a matter of going to the "API Keys" page in the Trigger dashboard, copying the production credentials, and pasting them in Script Properties.
+The last thing I had to do was put my Trigger credentials in my Apps Script project's Script Properties.  This was simply a matter of going to the "API Keys" page in the Trigger dashboard, copying the production credentials, and pasting them in Script Properties.
 
 ![trigger api key](./figures/trigger-api-key.png)
 
-Then it's just a matter of hitting the API route in the Apps Script code:
+Then it's just a matter of hitting the API route for the root task, from the Apps Script code:
 
 1. **Build the payload**
 
@@ -469,8 +471,8 @@ const obj = UrlFetchApp.fetch(
 );
 ```
 
-As far as I know, Apps Scripts can't make asynchronous requests, and there are limitations on how long this synchronous function call can take.  Fortunately,
-the Trigger API responds right away with the run ID after a few seconds.
+As far as I know, Apps Scripts can't make non-blocking requests, and there are limitations on how long this blocking `fetch` function call can take.  Fortunately,
+the Trigger API responds right away with the run ID after a few seconds. 
 
 ## Conclusion
 
