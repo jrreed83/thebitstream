@@ -3,12 +3,14 @@ title: How to Serialize Data in Zig
 author: Joey Reed
 date: 2025-01-11
 draft: false
-summary:    
+summary: Writing data structures to binary files and reading them back in - the C way.    
 tags: ["zig"]
 ShowToc: true
 ---
 
 A lot of my work involves storing and processing large amounts of signal data produced by  sensor systems.  I have two options - store the data in text files or binary files.  Text files are human readable, but they're too big and slow to work with.  Binary files are my only practical option.  As a result, any programming language I use must provide a simple way to serialize and deserialize data structures to binary files.  I'm going to explain how to do this in [Zig](https://ziglang.org) - a modern systems programming language.
+
+My solution and sample program are in this [GitHub Gist](https://gist.github.com/jrreed83/7ecced2ced6866dff0bfd80b06c553dc).
 
 ## Handling Binary Files in C
 
